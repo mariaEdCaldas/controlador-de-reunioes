@@ -3,6 +3,7 @@ import cors from 'cors';
 import { db, dbFile, versaoSchema } from './db.js';
 import { palestrantesRouter } from './routes/palestrantes.js';
 import { regioesRouter } from './routes/regioes.js';
+import { reunioesRouter } from './routes/reunioes.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -32,6 +33,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/regioes', regioesRouter);
 app.use('/api/palestrantes', palestrantesRouter);
+app.use('/api/reunioes', reunioesRouter);
 
 app.use((req, res) => {
   res.status(404).json({ erro: 'Rota não encontrada.' });
