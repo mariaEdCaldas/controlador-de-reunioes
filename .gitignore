@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+
+# Banco de dados local (SQLite) - nao versionar
+server/data/*.db
+server/data/*.db-journal
+server/data/*.db-wal
+server/data/*.db-shm
+
+.env
+.env.local
+
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
