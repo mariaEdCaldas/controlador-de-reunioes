@@ -55,4 +55,25 @@ export const mudarStatusPalestrante = (id, ativo) =>
     body: JSON.stringify({ ativo }),
   });
 
+// ---------- reuniões ----------
+
+export const listarReunioes = () => pedir('/api/reunioes');
+
+export const criarReuniao = (dados) =>
+  pedir('/api/reunioes', { method: 'POST', body: JSON.stringify(dados) });
+
+export const buscarSugestoes = (id) => pedir(`/api/reunioes/${id}/sugestoes`);
+
+export const definirTitular = (id, palestranteId) =>
+  pedir(`/api/reunioes/${id}/titular`, {
+    method: 'PATCH',
+    body: JSON.stringify({ palestrante_id: palestranteId }),
+  });
+
+export const definirReserva = (id, palestranteId) =>
+  pedir(`/api/reunioes/${id}/reserva`, {
+    method: 'PATCH',
+    body: JSON.stringify({ palestrante_id: palestranteId }),
+  });
+
 export { ErroApi };
