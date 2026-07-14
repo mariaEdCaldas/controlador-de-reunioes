@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { buscarSugestoes, definirTitular, definirReserva } from './api.js';
 import { corDaRegiao, formatarTelefone, formatarData } from './regioes.js';
+import { linkWhatsApp } from './whatsapp.js';
 
 /**
  * Lista de palestrantes sugeridos para uma reunião (RN-03).
@@ -86,6 +87,20 @@ export default function Sugestoes({ reuniaoId, aoAtualizar }) {
         {/* tel: abre o discador do aparelho. */}
         <a className="botao pequeno" href={`tel:+${s.telefone}`}>
           Ligar
+        </a>
+
+        {/* Abre o WhatsApp com a conversa e o texto prontos — falta só enviar.
+            O porquê de não dar para automatizar mais que isto sem custo está
+            explicado em whatsapp.js. target=_blank para não perder esta tela.
+            Estilo "secundário" (dourado) em vez do verde da marca WhatsApp: a
+            paleta do gabinete é fechada, sem outras cores fortes. */}
+        <a
+          className="botao pequeno secundario"
+          href={linkWhatsApp(s, reuniao)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Chamar no WhatsApp
         </a>
         <button
           className="botao pequeno primario"
