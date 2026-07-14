@@ -59,10 +59,18 @@ reunioesRouter.post('/', (req, res) => {
   res.status(201).json(buscar(lastInsertRowid));
 });
 
-/** GET /api/reunioes - mais recentes primeiro. */
+/**
+ * GET /api/reunioes - mais recentes primeiro.
+ * Filtro opcional: ?status=realizada (usado pela tela de Histórico).
+ */
 reunioesRouter.get('/', (req, res) => {
+  const { status } = req.query;
+  const where = status ? 'WHERE r.status = @status' : '';
+
   res.json(
-    db.prepare(`${SELECT_BASE} ORDER BY r.data DESC, r.hora DESC, r.id DESC`).all()
+    db
+      .prepare(`${SELECT_BASE} ${where} ORDER BY r.data DESC, r.hora DESC, r.id DESC`)
+      .all(status ? { status } : {})
   );
 });
 
@@ -115,6 +123,13 @@ reunioesRouter.get('/:id/sugestoes', (req, res) => {
   res.json({ reuniao, sugestoes });
 });
 
+// Reuniao realizada e historico (RN-10): trocar o titular depois do fato faria
+// a prestacao de contas mentir sobre quem foi. O checklist tambem congela - o
+// som ou nao foi providenciado, e isso ja aconteceu.
+const ERRO_REALIZADA =
+  'Esta reunião já foi marcada como realizada e faz parte do histórico. ' +
+  'Não é possível alterá-la.';
+
 /** Confere que o palestrante existe e esta ativo. */
 function carregarPalestranteAtivo(id) {
   const p = db.prepare('SELECT id, nome, ativo FROM palestrantes WHERE id = ?').get(id);
@@ -135,6 +150,7 @@ function carregarPalestranteAtivo(id) {
 reunioesRouter.patch('/:id/titular', (req, res) => {
   const reuniao = buscar(req.params.id);
   if (!reuniao) return res.status(404).json({ erro: 'Reunião não encontrada.' });
+  if (reuniao.status === 'realizada') return res.status(400).json({ erro: ERRO_REALIZADA });
 
   const p = carregarPalestranteAtivo(req.body.palestrante_id);
   if (!p.ok) return res.status(p.status).json({ erro: p.erro });
@@ -183,6 +199,7 @@ reunioesRouter.patch('/:id/titular', (req, res) => {
 reunioesRouter.patch('/:id/reserva', (req, res) => {
   const reuniao = buscar(req.params.id);
   if (!reuniao) return res.status(404).json({ erro: 'Reunião não encontrada.' });
+  if (reuniao.status === 'realizada') return res.status(400).json({ erro: ERRO_REALIZADA });
 
   const { palestrante_id: novo } = req.body;
 
@@ -202,6 +219,62 @@ reunioesRouter.patch('/:id/reserva', (req, res) => {
 
   db.prepare('UPDATE reunioes SET reserva_id = ? WHERE id = ?')
     .run(p.palestrante.id, reuniao.id);
+
+  res.json({ reuniao: buscar(reuniao.id) });
+});
+
+/**
+ * PATCH /api/reunioes/:id/checklist  - body: { som: bool, cadeiras: bool }
+ *
+ * RN-05: som e cadeiras são os itens fixos de toda reunião. Os dois campos são
+ * enviados juntos e sempre refletem o estado das caixinhas na tela.
+ */
+reunioesRouter.patch('/:id/checklist', (req, res) => {
+  const reuniao = buscar(req.params.id);
+  if (!reuniao) return res.status(404).json({ erro: 'Reunião não encontrada.' });
+  if (reuniao.status === 'realizada') return res.status(400).json({ erro: ERRO_REALIZADA });
+
+  const { som, cadeiras } = req.body;
+  if (typeof som !== 'boolean' || typeof cadeiras !== 'boolean') {
+    return res.status(400).json({ erro: 'Informe "som" e "cadeiras" como true ou false.' });
+  }
+
+  db.prepare(
+    'UPDATE reunioes SET checklist_som = ?, checklist_cadeiras = ? WHERE id = ?'
+  ).run(som ? 1 : 0, cadeiras ? 1 : 0, reuniao.id);
+
+  res.json({ reuniao: buscar(reuniao.id) });
+});
+
+/**
+ * PATCH /api/reunioes/:id/realizada  - body: { presentes: number }
+ *
+ * RN-10: depois da reunião, registra-se quantas pessoas foram (contagem na mão,
+ * não automática) e a reunião entra no histórico de prestação de contas.
+ *
+ * Exige titular definido: o histórico responde "quem foi falar, onde, para
+ * quantas pessoas" - sem titular, a linha não serve para prestar contas.
+ */
+reunioesRouter.patch('/:id/realizada', (req, res) => {
+  const reuniao = buscar(req.params.id);
+  if (!reuniao) return res.status(404).json({ erro: 'Reunião não encontrada.' });
+
+  if (!reuniao.titular_id) {
+    return res.status(400).json({
+      erro: 'Defina o palestrante titular antes de marcar a reunião como realizada.',
+    });
+  }
+
+  const presentes = Number(req.body.presentes);
+  if (!Number.isInteger(presentes) || presentes < 0) {
+    return res.status(400).json({
+      erro: 'Informe o número de presentes (um número inteiro, 0 ou mais).',
+    });
+  }
+
+  db.prepare(
+    `UPDATE reunioes SET status = 'realizada', presentes = ? WHERE id = ?`
+  ).run(presentes, reuniao.id);
 
   res.json({ reuniao: buscar(reuniao.id) });
 });

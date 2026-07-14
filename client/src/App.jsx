@@ -2,11 +2,13 @@ import { useState } from 'react';
 import Palestrantes from './Palestrantes.jsx';
 import Agenda from './Agenda.jsx';
 import NovaReuniao from './NovaReuniao.jsx';
+import Historico from './Historico.jsx';
 
 const ABAS = [
   { id: 'agenda', rotulo: 'Agenda' },
   { id: 'nova', rotulo: 'Nova reunião' },
   { id: 'palestrantes', rotulo: 'Palestrantes' },
+  { id: 'historico', rotulo: 'Histórico' },
 ];
 
 export default function App() {
@@ -51,6 +53,7 @@ export default function App() {
         )}
         {aba === 'nova' && <NovaReuniao aoConcluir={voltarParaAgenda} />}
         {aba === 'palestrantes' && <Palestrantes />}
+        {aba === 'historico' && <Historico />}
       </main>
     </div>
   );

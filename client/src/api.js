@@ -57,7 +57,8 @@ export const mudarStatusPalestrante = (id, ativo) =>
 
 // ---------- reuniões ----------
 
-export const listarReunioes = () => pedir('/api/reunioes');
+export const listarReunioes = ({ status } = {}) =>
+  pedir(`/api/reunioes${status ? `?status=${status}` : ''}`);
 
 export const criarReuniao = (dados) =>
   pedir('/api/reunioes', { method: 'POST', body: JSON.stringify(dados) });
@@ -74,6 +75,18 @@ export const definirReserva = (id, palestranteId) =>
   pedir(`/api/reunioes/${id}/reserva`, {
     method: 'PATCH',
     body: JSON.stringify({ palestrante_id: palestranteId }),
+  });
+
+export const salvarChecklist = (id, { som, cadeiras }) =>
+  pedir(`/api/reunioes/${id}/checklist`, {
+    method: 'PATCH',
+    body: JSON.stringify({ som, cadeiras }),
+  });
+
+export const marcarRealizada = (id, presentes) =>
+  pedir(`/api/reunioes/${id}/realizada`, {
+    method: 'PATCH',
+    body: JSON.stringify({ presentes }),
   });
 
 export { ErroApi };
