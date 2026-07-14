@@ -4,7 +4,7 @@ import Agenda from './Agenda.jsx';
 import NovaReuniao from './NovaReuniao.jsx';
 import Historico from './Historico.jsx';
 
-const ABAS = [
+const NAV = [
   { id: 'agenda', rotulo: 'Agenda' },
   { id: 'nova', rotulo: 'Nova reunião' },
   { id: 'palestrantes', rotulo: 'Palestrantes' },
@@ -13,7 +13,6 @@ const ABAS = [
 
 export default function App() {
   const [aba, setAba] = useState('agenda');
-  // Muda a key da Agenda para forçá-la a recarregar ao voltar de uma criação.
   const [recarga, setRecarga] = useState(0);
 
   function voltarParaAgenda() {
@@ -22,32 +21,40 @@ export default function App() {
   }
 
   return (
-    <div className="pagina">
-      <header className="topo">
-        <div className="marca">
-          <span className="patinhos" aria-hidden="true">
+    <div className="layout">
+      {/* Coluna lateral fixa (vira barra horizontal no topo em telas pequenas). */}
+      <aside className="lateral">
+        <div className="identidade">
+          <div className="numero">22.222</div>
+          <div className="candidato">Dep. Paulo Corrêa</div>
+          <div className="lema">“5 patinhos na lagoa”</div>
+          <div className="patinhos" aria-hidden="true">
             <i /><i /><i /><i /><i />
-          </span>
-          <div>
-            <strong>Agenda de Palestrantes</strong>
-            <small>Gabinete Dep. Paulo Corrêa</small>
           </div>
         </div>
 
-        <nav className="abas">
-          {ABAS.map((a) => (
+        <nav className="nav">
+          {NAV.map((n) => (
             <button
-              key={a.id}
-              className={`aba ${aba === a.id ? 'ativa' : ''}`}
-              onClick={() => setAba(a.id)}
+              key={n.id}
+              className={`nav-item ${aba === n.id ? 'ativa' : ''}`}
+              onClick={() => setAba(n.id)}
+              aria-current={aba === n.id ? 'page' : undefined}
             >
-              {a.rotulo}
+              {n.rotulo}
             </button>
           ))}
         </nav>
-      </header>
 
-      <main>
+        {/* Atalho sempre visível: cadastrar reunião é a ação mais frequente. */}
+        <button className="atalho" onClick={() => setAba('nova')}>
+          + Nova reunião
+        </button>
+
+        <div className="rodape-lateral">Agenda de Palestrantes</div>
+      </aside>
+
+      <main className="conteudo">
         {aba === 'agenda' && (
           <Agenda key={recarga} aoNovaReuniao={() => setAba('nova')} />
         )}
