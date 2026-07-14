@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { db, dbFile, versaoSchema } from './db.js';
+import { palestrantesRouter } from './routes/palestrantes.js';
+import { regioesRouter } from './routes/regioes.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -28,8 +30,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api/regioes', regioesRouter);
+app.use('/api/palestrantes', palestrantesRouter);
+
 app.use((req, res) => {
-  res.status(404).json({ erro: 'Rota nao encontrada' });
+  res.status(404).json({ erro: 'Rota não encontrada.' });
+});
+
+// Rede de seguranca: as constraints do banco (telefone fora do formato, choque
+// de agenda, FK) virariam um erro cru de SQLite. Aqui viram 400 com mensagem.
+app.use((erro, req, res, next) => {
+  if (String(erro.code ?? '').startsWith('SQLITE_CONSTRAINT')) {
+    console.error('[server] constraint do banco:', erro.message);
+    return res.status(400).json({ erro: 'Dados inválidos.', detalhe: erro.message });
+  }
+  console.error('[server] erro inesperado:', erro);
+  res.status(500).json({ erro: 'Erro interno no servidor.' });
 });
 
 app.listen(PORT, () => {
