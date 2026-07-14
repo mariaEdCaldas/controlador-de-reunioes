@@ -1,47 +1,632 @@
+/* =========================================================================
+   Identidade visual — Gabinete Dep. Paulo Corrêa (protótipo aprovado)
+
+   Paleta fechada: verde escuro (lateral), verde (ações primárias), dourado
+   (ações secundárias e destaques), bege/papel (fundo e cards). Nenhuma outra
+   cor forte na interface — as únicas exceções são as bolinhas de bairro, que
+   são identificação, e o vermelho de erro, que é sinal de alerta.
+
+   Fontes: só as do sistema operacional. Nada de Google Fonts ou @import de
+   fora — o gabinete precisa abrir o sistema mesmo sem internet.
+   ========================================================================= */
 :root {
-  --ink: #0f3b25;
-  --bone: #fbf9f2;
-  --line: #dce3d3;
-  --gray: #6b7280;
+  --verde-escuro: #0f3b25;
+  --verde-escuro-2: #0b2d1c;
+  --verde: #1e7a3d;
+  --verde-hover: #17632f;
+  --dourado: #d6a419;
+  --dourado-claro: #fbf4e6;
+  --dourado-linha: #ecd9a8;
+
+  --papel: #ffffff;
+  --bege: #fbf9f2;
+  --bege-2: #f5f2e8;
+
+  --tinta: #1c2b22;
+  --tinta-suave: #46584d;
+  --cinza: #6b7280;
+  --linha: #e4e7dd;
+
+  --erro: #b33a3a;
+  --erro-fundo: #fdf0f0;
+  --erro-linha: #f0c9c9;
+
+  --raio: 10px;
+  --raio-pequeno: 6px;
+
+  --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fonte-mono: ui-monospace, 'Cascadia Mono', Consolas, 'Courier New', monospace;
+
+  --lateral: 232px;
 }
+
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
-  padding: 48px 20px;
-  background: var(--bone);
-  color: var(--ink);
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bege);
+  color: var(--tinta);
+  font-family: var(--fonte);
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-main {
-  max-width: 680px;
-  margin: 0 auto;
+/* =========================================================================
+   LAYOUT: coluna lateral fixa + área principal
+   ========================================================================= */
+.layout { display: flex; min-height: 100vh; }
+
+.lateral {
+  width: var(--lateral);
+  flex-shrink: 0;
+  background: var(--verde-escuro);
+  color: #e8f0e9;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 20px 22px;
+  /* Fixa: a navegação acompanha a rolagem das listas longas. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
 
-h1 {
-  margin: 0 0 4px;
-  font-size: 28px;
+.conteudo {
+  flex: 1;
+  min-width: 0; /* deixa o conteúdo encolher em vez de estourar a página */
+  padding: 34px 40px 80px;
+  max-width: 1080px;
 }
 
-.sub {
-  margin: 0 0 28px;
-  color: var(--gray);
-}
+/* ---------- identidade do gabinete ---------- */
+.identidade { padding-bottom: 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
 
-.status {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 16px 18px;
-  background: #fff;
+.numero {
+  font-family: var(--fonte-mono);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--dourado);
+  line-height: 1.1;
+}
+.candidato { font-size: 14px; font-weight: 600; margin-top: 6px; color: #fff; }
+.lema { font-size: 12.5px; font-style: italic; color: rgba(232, 240, 233, 0.7); margin-top: 2px; }
+
+.patinhos { display: flex; gap: 5px; margin-top: 12px; }
+.patinhos i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--dourado);
+  opacity: 0.5;
+}
+.patinhos i:nth-child(3) { opacity: 1; }
+
+/* ---------- navegação vertical ---------- */
+.nav { display: flex; flex-direction: column; gap: 2px; margin-top: 22px; }
+
+.nav-item {
+  font: inherit;
   font-size: 14px;
-  word-break: break-all;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  color: rgba(232, 240, 233, 0.78);
+  cursor: pointer;
+}
+.nav-item:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
+.nav-item.ativa {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 600;
+  /* Barra dourada marca a página atual sem depender só da cor de fundo. */
+  box-shadow: inset 3px 0 0 var(--dourado);
 }
 
-.status.ok {
-  border-left: 3px solid #1e7a3d;
+/* Atalho da ação mais frequente — sempre visível. */
+.atalho {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-top: 18px;
+  padding: 10px 12px;
+  border: 1px solid rgba(214, 164, 25, 0.5);
+  border-radius: var(--raio-pequeno);
+  background: rgba(214, 164, 25, 0.14);
+  color: var(--dourado);
+  cursor: pointer;
+}
+.atalho:hover { background: var(--dourado); color: var(--verde-escuro-2); border-color: var(--dourado); }
+
+.rodape-lateral {
+  margin-top: auto;
+  padding-top: 18px;
+  font-size: 11.5px;
+  color: rgba(232, 240, 233, 0.45);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.status.erro {
-  border-left: 3px solid #b33a3a;
+/* =========================================================================
+   TIPOGRAFIA E ELEMENTOS COMUNS
+   ========================================================================= */
+h1 { font-size: 25px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 17px; font-weight: 600; margin: 0 0 16px; }
+.sub { margin: 3px 0 0; color: var(--cinza); font-size: 13.5px; }
+
+.cabecalho-secao {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.cartao {
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(15, 59, 37, 0.03);
+}
+
+/* ---------- botões ---------- */
+.botao {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 16px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-pequeno);
+  background: var(--papel);
+  color: var(--tinta);
+  cursor: pointer;
+}
+.botao:hover { border-color: var(--tinta-suave); }
+.botao:disabled { opacity: 0.5; cursor: default; }
+.botao:disabled:hover { border-color: var(--linha); }
+
+/* Ação primária: verde. */
+.botao.primario {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #fff;
+  font-weight: 600;
+}
+.botao.primario:hover { background: var(--verde-hover); border-color: var(--verde-hover); }
+.botao.primario:disabled:hover { background: var(--verde); }
+
+/* Ação secundária: dourado. */
+.botao.secundario {
+  background: var(--dourado-claro);
+  border-color: var(--dourado-linha);
+  color: #7a5c12;
+  font-weight: 600;
+}
+.botao.secundario:hover { background: #f7ead0; border-color: var(--dourado); }
+
+.botao.pequeno { font-size: 12.5px; padding: 5px 10px; }
+
+/* Links que precisam parecer botões (tel: e wa.me). */
+a.botao { text-decoration: none; display: inline-block; }
+
+/* ---------- formulários ---------- */
+.form { margin-bottom: 24px; border-left: 3px solid var(--dourado); }
+.linha { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.campo { flex: 1 1 240px; display: flex; flex-direction: column; gap: 4px; }
+.campo > span { font-size: 13px; font-weight: 600; color: var(--tinta-suave); }
+.campo > span b { color: var(--erro); }
+
+input, select {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-pequeno);
+  background: var(--papel);
+  color: var(--tinta);
+}
+input:focus, select:focus { outline: 2px solid var(--dourado); outline-offset: -1px; }
+input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--erro); }
+
+.dica { font-size: 12px; color: var(--cinza); }
+.erro-campo { font-size: 12px; color: var(--erro); font-weight: 500; }
+.acoes-form { display: flex; gap: 10px; margin-top: 4px; }
+
+/* ---------- avisos ---------- */
+.aviso { border-radius: var(--raio-pequeno); padding: 10px 14px; font-size: 13.5px; margin: 0 0 14px; }
+.aviso.erro { background: var(--erro-fundo); border: 1px solid var(--erro-linha); color: #8c2b2b; }
+.aviso.info { background: var(--dourado-claro); border: 1px solid var(--dourado-linha); color: #7a5c12; }
+
+.vazio {
+  color: var(--cinza);
+  font-size: 14px;
+  background: var(--papel);
+  border: 1px dashed var(--linha);
+  border-radius: var(--raio);
+  padding: 30px;
+  text-align: center;
+}
+.vazio.pequeno { padding: 16px; font-size: 13px; }
+
+.etiqueta {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cinza);
+  border: 1px solid var(--linha);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+.etiqueta.titular { border-color: var(--verde); color: var(--verde); background: #f1f8f3; }
+.etiqueta.reserva { border-color: var(--dourado); color: #7a5c12; background: var(--dourado-claro); }
+
+/* Bolinha de identificação do bairro: cor fixa por região, a mesma em todas as
+   telas. Nunca é a única informação — o nome do bairro vem escrito ao lado. */
+.bolinha { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.item-bairro {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--tinta-suave);
+  white-space: nowrap;
+}
+
+/* Números (telefone, horário) em monoespaçada: alinham e não se confundem. */
+.item-telefone {
+  font-family: var(--fonte-mono);
+  font-size: 12.5px;
+  color: var(--tinta-suave);
+  white-space: nowrap;
+}
+
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+
+/* =========================================================================
+   PALESTRANTES
+   ========================================================================= */
+/* Colunas de largura FIXA (não `auto`): cada card é um grid independente, então
+   com `auto` a largura dependeria do conteúdo de cada linha e as colunas não se
+   alinhariam de um card para o outro. */
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px 128px 148px;
+  grid-template-areas: 'principal bairro telefone acoes';
+  align-items: center;
+  gap: 18px;
+}
+.item > .item-principal { grid-area: principal; min-width: 0; }
+.item > .item-bairro { grid-area: bairro; }
+.item > .item-telefone { grid-area: telefone; }
+.item > .item-acoes { grid-area: acoes; justify-content: flex-end; }
+
+.item.inativo { background: var(--bege-2); }
+.item.inativo .item-principal,
+.item.inativo .item-bairro,
+.item.inativo .item-telefone { opacity: 0.55; }
+
+.item-nome { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.item-temas { font-size: 13px; color: var(--cinza); }
+.item-temas em { color: #9ca3af; }
+.item-acoes { display: flex; gap: 6px; }
+
+.filtro { margin-bottom: 14px; font-size: 13.5px; color: var(--tinta-suave); }
+.filtro select { margin-left: 4px; }
+
+.rodape-nota {
+  margin-top: 26px;
+  font-size: 12.5px;
+  color: var(--cinza);
+  border-top: 1px solid var(--linha);
+  padding-top: 14px;
+}
+
+/* =========================================================================
+   AGENDA
+   ========================================================================= */
+/* Mesma regra do card de palestrante: larguras fixas nas colunas laterais para
+   que TITULAR, checklist e status caiam no mesmo x em todos os cards. Com a
+   última coluna em `auto`, o card "Realizada" (que mostra "54 presentes" no
+   lugar do botão) encolhia a coluna e deslocava as do meio. */
+.reuniao {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1.5fr) minmax(0, 1.1fr) 168px;
+  /* Áreas nomeadas: os breakpoints só redesenham este mapa, sem reposicionar
+     elemento por elemento. */
+  grid-template-areas:
+    'quando   onde     quem     status'
+    '.        encerrar encerrar encerrar'
+    'painel   painel   painel   painel';
+  gap: 18px;
+  align-items: start;
+}
+.reuniao > .reuniao-quando { grid-area: quando; }
+.reuniao > .reuniao-onde { grid-area: onde; min-width: 0; }
+.reuniao > .reuniao-quem { grid-area: quem; min-width: 0; }
+.reuniao > .reuniao-status { grid-area: status; }
+.reuniao > .encerrar { grid-area: encerrar; }
+.reuniao > .reuniao-painel { grid-area: painel; }
+
+.reuniao.concluida { background: var(--bege-2); }
+
+.reuniao-quando {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--linha);
+  padding-right: 14px;
+  /* A régua vertical acompanha a altura do card em vez de parar no fim da data. */
+  align-self: stretch;
+}
+.reuniao-quando strong { font-family: var(--fonte-mono); font-size: 14px; font-weight: 700; }
+.reuniao-quando span { font-family: var(--fonte-mono); font-size: 12.5px; color: var(--cinza); }
+
+.reuniao-onde .item-bairro { margin-top: 4px; }
+
+.reuniao-quem { font-size: 13.5px; display: flex; flex-direction: column; gap: 3px; }
+.reuniao-quem .rotulo {
+  display: inline-block;
+  min-width: 52px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cinza);
+}
+.pendente { color: #9ca3af; }
+
+.reuniao-status { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+
+/* Status é texto antes de ser cor — legível sem distinguir tonalidade. */
+.status {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.status.a_confirmar { background: var(--dourado-claro); color: #8a6410; border: 1px solid var(--dourado-linha); }
+.status.confirmada  { background: #eef6f0; color: #14612f; border: 1px solid #c9e3d2; }
+.status.realizada   { background: var(--bege-2); color: var(--tinta-suave); border: 1px solid var(--linha); }
+
+/* checklist (RN-05) */
+.checklist { display: flex; gap: 14px; margin-top: 8px; }
+.checklist label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--cinza); cursor: pointer; }
+.checklist input { accent-color: var(--verde); width: 15px; height: 15px; cursor: pointer; }
+.checklist input:disabled { cursor: default; }
+.checklist label.feito { color: var(--verde); font-weight: 600; }
+
+/* encerramento (RN-10) */
+.encerrar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px dashed var(--linha);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.campo-presentes { display: flex; flex-direction: column; gap: 3px; }
+.campo-presentes span { font-size: 12px; font-weight: 600; color: var(--tinta-suave); }
+.campo-presentes input { width: 120px; }
+.encerrar .dica { padding-bottom: 8px; }
+.presentes-registrados { font-size: 13px; font-weight: 600; color: var(--tinta-suave); white-space: nowrap; }
+
+.reuniao-painel {
+  border-top: 1px solid var(--linha);
+  margin-top: 6px;
+  padding-top: 16px;
+}
+
+/* =========================================================================
+   SUGESTÕES DE PALESTRANTE (RN-03)
+   ========================================================================= */
+.painel-sugestoes h2 { margin-bottom: 4px; }
+
+.resumo-alocacao {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  background: var(--dourado-claro);
+  border: 1px solid var(--dourado-linha);
+  border-radius: var(--raio-pequeno);
+  padding: 10px 14px;
+  font-size: 13.5px;
+  margin: 14px 0 18px;
+}
+
+.grupo { font-size: 15px; font-weight: 600; margin: 22px 0 10px; display: flex; align-items: baseline; gap: 10px; }
+.grupo small { font-size: 12px; color: var(--cinza); font-weight: 400; }
+
+.sugestao { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.sugestao.ocupado { background: var(--bege-2); }
+.sugestao.ocupado .sug-info { opacity: 0.6; }
+
+.sug-meta { display: flex; gap: 16px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+.sug-conflito { font-size: 12.5px; color: var(--erro); margin: 6px 0 0; }
+.sug-acoes { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+/* =========================================================================
+   HISTÓRICO
+   ========================================================================= */
+.tabela-caixa { padding: 0; overflow-x: auto; }
+.tabela { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+.tabela th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--cinza);
+  font-weight: 700;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--linha);
+  background: var(--bege);
+  white-space: nowrap;
+}
+.tabela td { padding: 12px 16px; border-bottom: 1px solid #f0f2ec; vertical-align: top; }
+.tabela tbody tr:last-child td { border-bottom: none; }
+.tabela tbody tr:hover { background: var(--bege); }
+
+.tabela .num { text-align: right; font-family: var(--fonte-mono); font-variant-numeric: tabular-nums; }
+.tabela .nowrap { white-space: nowrap; }
+/* Só a data vai em monoespaçada — datas alinhadas em coluna se comparam de
+   relance. Nome de bairro é texto, e em mono ficaria com cara de código. */
+.tabela .data { font-family: var(--fonte-mono); font-size: 13px; }
+.celula-sub { font-size: 12.5px; color: var(--cinza); margin-top: 2px; font-weight: 400; }
+
+.tabela tfoot td {
+  border-top: 2px solid var(--linha);
+  border-bottom: none;
+  background: var(--bege);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+.tabela tfoot .rotulo-total { text-align: right; font-weight: 400; color: var(--cinza); }
+
+/* =========================================================================
+   RESPONSIVO — três estágios
+
+   1. > 1080px  : layout cheio (lateral fixa + cards em 4 colunas)
+   2. 700–1080  : cards em 3 colunas; abaixo de 860 a lateral vira barra no topo
+   3. < 700px   : celular — tudo empilhado, botões maiores para o dedo
+   ========================================================================= */
+
+/* ---------- 2. intermediário: telas médias e tablets ---------- */
+@media (max-width: 1080px) {
+  .conteudo { padding: 30px 26px 70px; }
+
+  /* Sem este passo, entre 860 e 1080px as quatro colunas ficam espremidas:
+     sobra pouco espaço para o nome do local e ele quebra em três linhas. */
+  .reuniao {
+    grid-template-columns: 96px minmax(0, 1fr) 158px;
+    grid-template-areas:
+      'quando   onde     status'
+      '.        quem     status'
+      '.        encerrar encerrar'
+      'painel   painel   painel';
+    gap: 14px 16px;
+  }
+
+  .item {
+    grid-template-columns: minmax(0, 1fr) 150px 128px;
+    grid-template-areas:
+      'principal bairro telefone'
+      'acoes     acoes  acoes';
+    gap: 12px 16px;
+  }
+  .item > .item-acoes { justify-content: flex-start; }
+}
+
+/* ---------- lateral vira barra horizontal no topo ---------- */
+@media (max-width: 860px) {
+  .layout { flex-direction: column; }
+
+  .lateral {
+    width: 100%;
+    height: auto;
+    position: sticky; /* a navegação continua alcançável ao rolar a lista */
+    top: 0;
+    z-index: 10;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding: 12px 18px;
+  }
+
+  .identidade {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  .numero { font-size: 20px; }
+  .candidato { margin-top: 0; }
+  /* Não cabem na barra: o número e o nome bastam para identificar o gabinete. */
+  .lema, .patinhos, .rodape-lateral { display: none; }
+
+  .nav { flex-direction: row; flex-wrap: wrap; gap: 4px; margin-top: 0; }
+  .nav-item { padding: 7px 11px; font-size: 13px; }
+  /* A marca da aba ativa passa de barra lateral para sublinhado. */
+  .nav-item.ativa { box-shadow: inset 0 -2px 0 var(--dourado); }
+
+  .atalho { margin-top: 0; margin-left: auto; padding: 8px 12px; }
+}
+
+/* ---------- 3. celular ---------- */
+@media (max-width: 700px) {
+  .conteudo { padding: 20px 14px 60px; }
+
+  /* A barra do topo em duas faixas: identidade + atalho / navegação rolável. */
+  .lateral { gap: 8px 12px; padding: 10px 14px; }
+  .numero { font-size: 18px; }
+  .candidato { font-size: 12.5px; }
+  .atalho { font-size: 12.5px; padding: 7px 10px; }
+
+  .nav {
+    order: 3;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    /* As 4 abas não cabem lado a lado: viram uma faixa que rola no dedo. */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-item { white-space: nowrap; flex-shrink: 0; }
+
+  h1 { font-size: 21px; }
+  .cabecalho-secao { margin-bottom: 16px; }
+  .cartao { padding: 16px; border-radius: 8px; }
+
+  /* Cards empilhados: cada informação em sua linha. */
+  .item {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'principal' 'bairro' 'telefone' 'acoes';
+    gap: 8px;
+  }
+
+  .reuniao {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'quando' 'onde' 'quem' 'status' 'encerrar' 'painel';
+    gap: 12px;
+  }
+  /* Data e hora lado a lado, viram o cabeçalho do card. */
+  .reuniao-quando {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+    border-right: none;
+    border-bottom: 1px solid var(--linha);
+    padding: 0 0 10px;
+  }
+  .reuniao-status { flex-direction: row; align-items: center; justify-content: space-between; }
+
+  .sugestao { flex-direction: column; align-items: stretch; }
+  .sug-acoes { width: 100%; }
+  .sug-acoes > * { flex: 1 1 auto; text-align: center; }
+
+  .encerrar { align-items: stretch; }
+  .campo-presentes input { width: 100%; }
+
+  /* Alvos de toque: dedo não acerta botão de 26px de altura. */
+  .botao, a.botao { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+  .botao.pequeno { font-size: 13px; padding: 8px 12px; }
+  /* :not(checkbox) — senão o min-height estica a caixinha do checklist, que
+     tem tamanho próprio. 16px na fonte evita o zoom automático do iOS ao focar. */
+  input:not([type='checkbox']), select { min-height: 42px; font-size: 16px; }
+  .checklist { gap: 18px; }
+  .checklist input { width: 20px; height: 20px; min-height: 0; }
+  .nav-item { min-height: 38px; }
+
+  /* A tabela do histórico não encolhe: rola na horizontal dentro do card. */
+  .tabela { min-width: 560px; }
+
+  .oculto-celular { display: none; }
 }
