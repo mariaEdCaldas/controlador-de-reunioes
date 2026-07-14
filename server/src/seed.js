@@ -26,13 +26,29 @@ const REUNIOES = [
     regiao: 'Coophavila',
     data: '2026-07-20',
     hora: '19:00',
-    status: 'a_confirmar',
+    // Tem titular, entao ja esta confirmada (quem confirma a reuniao e o
+    // titular - RN-04).
+    status: 'confirmada',
     // Titular sugerido pela regiao (Cléia mora na Coophavila) - RN-03.
     titular: 'Cléia Ramires',
     reserva: null,
-    checklist_som: 0,
+    checklist_som: 1,
     checklist_cadeiras: 0,
     presentes: null,
+  },
+  {
+    // Ja aconteceu: e o exemplo que aparece na tela de Histórico (RN-10).
+    local: 'Associação Bairro Tiradentes',
+    endereco: 'Rua Ipiranga, 88',
+    regiao: 'Tiradentes',
+    data: '2026-07-08',
+    hora: '18:30',
+    status: 'realizada',
+    titular: 'Fernanda Melo',
+    reserva: null,
+    checklist_som: 1,
+    checklist_cadeiras: 1,
+    presentes: 54, // contagem manual, feita por quem esteve la
   },
   {
     local: 'Associação de Moradores do Centro',
@@ -120,3 +136,4 @@ console.log(`[seed] Banco: ${dbFile}`);
 console.log(`[seed] ${contar('regioes')} regiões (da migration)`);
 console.log(`[seed] ${contar('palestrantes')} palestrantes de exemplo inseridos`);
 console.log(`[seed] ${contar('reunioes')} reuniões de exemplo inseridas`);
+console.log('[seed] (uma delas já vem como "realizada", para a tela de Histórico não nascer vazia)');
