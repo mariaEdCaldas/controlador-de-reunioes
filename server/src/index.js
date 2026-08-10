@@ -6,6 +6,8 @@ import { regioesRouter } from './routes/regioes.js';
 import { reunioesRouter } from './routes/reunioes.js';
 import { timesRouter } from './routes/times.js';
 import { coordenadoresRouter } from './routes/coordenadores.js';
+import { lembretesRouter } from './routes/lembretes.js';
+import { agendarDisparoDiario } from './lembretes.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -40,6 +42,7 @@ app.use('/api/palestrantes', palestrantesRouter);
 app.use('/api/reunioes', reunioesRouter);
 app.use('/api/times', timesRouter);
 app.use('/api/coordenadores', coordenadoresRouter);
+app.use('/api/lembretes', lembretesRouter);
 
 app.use((req, res) => {
   res.status(404).json({ erro: 'Rota não encontrada.' });
@@ -59,4 +62,6 @@ app.use((erro, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`[server] API rodando em http://localhost:${PORT}`);
   console.log(`[server] Banco SQLite em ${dbFile}`);
+  // Confere as reuniões de amanhã uma vez por dia e envia os lembretes.
+  agendarDisparoDiario();
 });

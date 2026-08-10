@@ -5,6 +5,7 @@ import NovaReuniao from './NovaReuniao.jsx';
 import Historico from './Historico.jsx';
 import Times from './Times.jsx';
 import Coordenadores from './Coordenadores.jsx';
+import Lembretes from './Lembretes.jsx';
 
 const NAV = [
   { id: 'agenda', rotulo: 'Agenda' },
@@ -13,6 +14,7 @@ const NAV = [
   { id: 'historico', rotulo: 'Histórico' },
   { id: 'times', rotulo: 'Times' },
   { id: 'coordenadores', rotulo: 'Coordenadores' },
+  { id: 'lembretes', rotulo: 'Lembretes' },
 ];
 
 export default function App() {
@@ -67,6 +69,7 @@ export default function App() {
         {aba === 'historico' && <Historico />}
         {aba === 'times' && <Times />}
         {aba === 'coordenadores' && <Coordenadores />}
+        {aba === 'lembretes' && <Lembretes />}
       </main>
     </div>
   );

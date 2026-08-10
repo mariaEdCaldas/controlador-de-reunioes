@@ -59,6 +59,36 @@
 .import-tabela-caixa .tabela th { position: sticky; top: 0; }
 .linha-ignorada { opacity: 0.55; }
 
+/* ---------- lembretes ---------- */
+.lembrete-status { margin-bottom: 18px; font-size: 14px; }
+.lembrete-status.ok { border-left: 3px solid var(--verde); }
+.lembrete-status.pendente { border-left: 3px solid var(--dourado); }
+.lembrete-status p { margin: 8px 0 0; }
+.lembrete-status code {
+  font-family: var(--fonte-mono);
+  font-size: 12.5px;
+  background: var(--bege-2);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.lembrete-dest { color: var(--cinza); font-size: 13px; }
+
+.lembrete-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 6px 0 14px;
+}
+.lembrete-barra h2 { margin: 0; }
+
+.lembrete-item { display: flex; flex-direction: column; gap: 10px; }
+.lembrete-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.lembrete-detalhe { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13.5px; color: var(--tinta-suave); }
+.lembrete-detalhe .pend { color: #8a6410; font-weight: 600; }
+.lembrete-detalhe .ok { color: var(--verde); font-weight: 600; }
+
 @media (max-width: 700px) {
   .coord-item {
     grid-template-columns: 1fr;

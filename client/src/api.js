@@ -144,4 +144,11 @@ export const importarConfirmarPlanilha = (linhas) =>
     body: JSON.stringify({ linhas }),
   });
 
+// ---------- lembretes ----------
+
+export const previaLembretes = () => pedir('/api/lembretes/previa');
+
+export const enviarLembretes = ({ forcar = false } = {}) =>
+  pedir('/api/lembretes/enviar', { method: 'POST', body: JSON.stringify({ forcar }) });
+
 export { ErroApi };
