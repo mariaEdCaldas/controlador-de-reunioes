@@ -12,3 +12,22 @@ export const regioesRouter = Router();
 regioesRouter.get('/', (req, res) => {
   res.json(db.prepare('SELECT id, nome FROM regioes ORDER BY nome COLLATE NOCASE').all());
 });
+
+/**
+ * POST /api/regioes  - body: { nome }
+ * Cria um bairro/região novo — usado quando a pessoa digita um bairro que ainda
+ * não existe na hora de cadastrar a reunião. Se já existir (sem diferenciar
+ * maiúsculas/acentos de caixa), devolve o que já está lá, sem duplicar.
+ */
+regioesRouter.post('/', (req, res) => {
+  const nome = String(req.body.nome ?? '').trim();
+  if (!nome) return res.status(400).json({ erro: 'Informe o nome do bairro/região.' });
+
+  const existente = db
+    .prepare('SELECT id, nome FROM regioes WHERE nome = ? COLLATE NOCASE')
+    .get(nome);
+  if (existente) return res.json(existente);
+
+  const { lastInsertRowid } = db.prepare('INSERT INTO regioes (nome) VALUES (?)').run(nome);
+  res.status(201).json(db.prepare('SELECT id, nome FROM regioes WHERE id = ?').get(lastInsertRowid));
+});

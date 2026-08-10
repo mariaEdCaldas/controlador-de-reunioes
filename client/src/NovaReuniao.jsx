@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { criarReuniao, listarRegioes } from './api.js';
+import { criarReuniao, listarRegioes, criarRegiao } from './api.js';
 import Sugestoes from './Sugestoes.jsx';
 
-const VAZIO = { local: '', regiao_id: '', endereco: '', data: '', hora: '' };
+const VAZIO = { local: '', regiao: '', endereco: '', data: '', hora: '' };
 
 /**
  * Cadastra a reunião e, assim que ela existe, mostra os palestrantes sugeridos
@@ -33,14 +33,28 @@ export default function NovaReuniao({ aoConcluir }) {
     const e = {};
     if (!form.local.trim()) e.local = 'Informe o local.';
     if (!form.endereco.trim()) e.endereco = 'Informe o endereço.';
-    if (!form.regiao_id) e.regiao_id = 'Selecione o bairro.';
+    if (!form.regiao.trim()) e.regiao = 'Selecione ou digite o bairro.';
     if (!form.data) e.data = 'Informe a data.';
     if (!form.hora) e.hora = 'Informe a hora.';
     if (Object.keys(e).length > 0) return setErros(e);
 
     setSalvando(true);
     try {
-      const reuniao = await criarReuniao({ ...form, regiao_id: Number(form.regiao_id) });
+      // Resolve o bairro digitado para um id: usa o existente (ignorando caixa)
+      // ou cria um novo na hora.
+      const nomeRegiao = form.regiao.trim();
+      const existente = regioes.find(
+        (r) => r.nome.toLowerCase() === nomeRegiao.toLowerCase()
+      );
+      const regiao = existente ?? (await criarRegiao(nomeRegiao));
+
+      const reuniao = await criarReuniao({
+        local: form.local,
+        endereco: form.endereco,
+        data: form.data,
+        hora: form.hora,
+        regiao_id: regiao.id,
+      });
       setCriada(reuniao);
     } catch (erro) {
       if (Object.keys(erro.campos ?? {}).length > 0) setErros(erro.campos);
@@ -96,20 +110,25 @@ export default function NovaReuniao({ aoConcluir }) {
 
           <label className="campo">
             <span>Bairro / região <b aria-hidden="true">*</b></span>
-            <select
-              value={form.regiao_id}
-              onChange={mudar('regiao_id')}
-              aria-invalid={Boolean(erros.regiao_id)}
-            >
-              <option value="">Selecione…</option>
+            <input
+              list="lista-regioes"
+              value={form.regiao}
+              onChange={mudar('regiao')}
+              placeholder="Digite ou escolha (ex.: Amambaí/Centro)"
+              aria-invalid={Boolean(erros.regiao)}
+            />
+            <datalist id="lista-regioes">
               {regioes.map((r) => (
-                <option key={r.id} value={r.id}>{r.nome}</option>
+                <option key={r.id} value={r.nome} />
               ))}
-            </select>
-            {erros.regiao_id ? (
-              <small className="erro-campo">{erros.regiao_id}</small>
+            </datalist>
+            {erros.regiao ? (
+              <small className="erro-campo">{erros.regiao}</small>
             ) : (
-              <small className="dica">É por aqui que os palestrantes são sugeridos.</small>
+              <small className="dica">
+                Pode digitar um bairro novo — ele é criado ao salvar. É por aqui que os
+                palestrantes são sugeridos.
+              </small>
             )}
           </label>
         </div>

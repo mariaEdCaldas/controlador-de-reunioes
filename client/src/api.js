@@ -36,6 +36,11 @@ async function pedir(url, opcoes = {}) {
 
 export const listarRegioes = () => pedir('/api/regioes');
 
+// Cria (ou reaproveita) um bairro/região pelo nome — usado quando se digita um
+// bairro novo no cadastro da reunião.
+export const criarRegiao = (nome) =>
+  pedir('/api/regioes', { method: 'POST', body: JSON.stringify({ nome }) });
+
 export const listarPalestrantes = ({ regiaoId } = {}) => {
   const params = new URLSearchParams();
   if (regiaoId) params.set('regiao_id', regiaoId);

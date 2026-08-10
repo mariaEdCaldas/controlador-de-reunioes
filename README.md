@@ -7,11 +7,11 @@ cadeiras) e histórico das reuniões realizadas.
 Roda **inteiramente na máquina local** — o banco é um arquivo SQLite, não há
 servidor externo nem conta em nuvem.
 
-> Estado atual: **Palestrantes** (cadastro, edição, filtro por bairro,
-> ativar/inativar), **Reuniões** (agenda, sugestão de palestrante por bairro,
-> titular e reserva, contato por telefone/WhatsApp, checklist de som e cadeiras)
-> e **Histórico** (reuniões realizadas com número de presentes).
-> Falta: lembretes automáticos (RN-06).
+> Estado atual: **Palestrantes**, **Reuniões** (agenda, sugestão por bairro,
+> titular/reserva, contato por telefone/WhatsApp, checklist de som e cadeiras),
+> **Histórico** (reuniões realizadas com presentes), **Times** e
+> **Coordenadores** (carga da planilha + importação de novas planilhas .xlsx/.csv,
+> com vínculo aos times), e **Lembretes** por e-mail (véspera e fechamento).
 
 ## Requisitos
 
@@ -101,7 +101,8 @@ Rotas disponíveis hoje:
 | Método | Rota | O que faz |
 |---|---|---|
 | `GET` | `/api/health` | status da API, caminho do banco, versão do schema |
-| `GET` | `/api/regioes` | lista fixa de bairros (alimenta os selects) |
+| `GET` | `/api/regioes` | lista de bairros (alimenta os selects/autocompletar) |
+| `POST` | `/api/regioes` | cria um bairro novo (ou reaproveita, se já existir) |
 | `GET` | `/api/palestrantes` | lista; aceita `?regiao_id=2` e `?ativo=0` |
 | `POST` | `/api/palestrantes` | cadastra |
 | `PUT` | `/api/palestrantes/:id` | edita |
@@ -115,6 +116,14 @@ Rotas disponíveis hoje:
 | `PATCH` | `/api/reunioes/:id/realizada` | encerra e registra presença — `{"presentes": 40}` |
 
 `GET /api/reunioes?status=realizada` é o que alimenta a tela de Histórico.
+
+| `GET` | `/api/times` · `/api/coordenadores` | listagens (times com contagem) |
+| `POST` | `/api/times` · `/api/coordenadores` | cadastro |
+| `PATCH` | `/api/coordenadores/:id/time` | vincula/desvincula do time |
+| `POST` | `/api/coordenadores/importar/previa` | lê a planilha e mostra o que seria importado |
+| `POST` | `/api/coordenadores/importar/confirmar` | grava a importação |
+| `GET` | `/api/lembretes/previa` | reuniões de amanhã + prévia do e-mail |
+| `POST` | `/api/lembretes/enviar` | dispara os lembretes agora |
 
 **Reunião realizada não pode mais ser alterada** — nem o titular, nem o
 checklist. Ela virou prestação de contas, e mudar quem foi falar depois do fato
@@ -157,6 +166,53 @@ Tudo está em [client/src/styles.css](client/src/styles.css) (as cores, no `:roo
 do topo) e em [client/src/regioes.js](client/src/regioes.js) (a cor de cada
 bairro). Em telas estreitas, a lateral vira uma barra horizontal no topo.
 
+## Lembretes por e-mail (véspera das reuniões)
+
+São dois e-mails automáticos:
+
+1. **Véspera** — no dia anterior à reunião, com os dados dela e o lembrete do
+   aluguel de mesa, cadeiras e som (destacando o que ainda está pendente).
+   Roda uma vez por dia (8h por padrão).
+2. **Fechamento** — depois que a reunião já deve ter terminado (horário + 2h de
+   duração prevista, ajustável em `DURACAO_HORAS`), avisa se dá para **fechá-la
+   na agenda**: "pode fechar" quando há palestrante titular, ou "falta titular"
+   quando ainda não dá para marcar como realizada. O sistema confere isso a cada
+   15 minutos.
+
+Os e-mails vão, por padrão, para `mariaeduardacaldas1@gmail.com` e
+`wanessacaldass@hotmail.com` (editável em
+[server/src/config-lembretes.js](server/src/config-lembretes.js)).
+
+Todos os horários (véspera às 8h, fim previsto das reuniões) seguem o fuso de
+**Campo Grande / MS** (UTC−4), independente do fuso configurado no computador —
+ver [server/src/fuso.js](server/src/fuso.js).
+
+### Ligar o envio (uma vez)
+
+O envio usa seu próprio Gmail, de graça, mas precisa de uma **senha de app** do
+Google (não é a senha normal da conta):
+
+1. Ative a verificação em 2 etapas: <https://myaccount.google.com/security>
+2. Gere uma senha de app: <https://myaccount.google.com/apppasswords>
+3. Na pasta `server/`, copie `.env.example` para `.env` e cole a senha em `SMTP_PASS`.
+4. Reinicie o sistema (`npm run dev`).
+
+A aba **Lembretes** mostra se está configurado, as reuniões de amanhã, uma prévia
+do e-mail e um botão **Enviar e-mail agora** para testar. O arquivo `.env` fica
+só na sua máquina — não vai para o Git.
+
+### Duas limitações importantes
+
+- **O computador precisa estar ligado** com o sistema rodando no horário do
+  disparo (8h por padrão). Sendo um sistema local, ele não "acorda" sozinho —
+  se estiver desligado na hora, o e-mail daquele dia não sai. O botão *Enviar
+  agora* é a alternativa manual.
+- **WhatsApp automático não tem caminho gratuito.** Disparar sozinho de um número
+  exige a API oficial paga do WhatsApp Business (custo por conversa + um servidor
+  na internet para receber respostas) ou um robô fora dos termos do WhatsApp
+  (risco de bloquear o número). Por isso o WhatsApp aqui é **manual**: um botão
+  que abre a conversa com a mensagem pronta, faltando só apertar enviar.
+
 ## O banco de dados
 
 - Fica em `server/data/agenda.db`, criado automaticamente no primeiro start.
@@ -169,7 +225,7 @@ bairro). Em telas estreitas, a lateral vira uma barra horizontal no topo.
 
 | Tabela | O que guarda |
 |---|---|
-| `regioes` | lista fixa de bairros/regiões (Centro, Coophavila, …) |
+| `regioes` | bairros/regiões, no padrão `Bairro/Região` (os 71 de Campo Grande, ex.: Amambaí/Centro) |
 | `palestrantes` | nome, telefone, região, temas, ativo |
 | `reunioes` | local, endereço, região, data, hora, status, titular, reserva, checklist, presentes |
 | `migracoes` | controle interno de quais migrations já rodaram |
@@ -177,6 +233,10 @@ bairro). Em telas estreitas, a lateral vira uma barra horizontal no topo.
 `palestrantes.regiao_id` e `reunioes.regiao_id` apontam para a **mesma** tabela
 `regioes`. É isso que permite a sugestão automática da RN-03: comparar a região
 da reunião com a região dos palestrantes.
+
+No cadastro de reunião, o campo de bairro é digitável: escolhe-se um da lista
+(autocompletar) **ou digita-se um novo**, que é criado ao salvar. Nomes iguais
+(ignorando maiúsculas/acentos de caixa) não duplicam.
 
 O banco recusa dados inconsistentes por conta própria — telefone com máscara,
 data fora do padrão, status inventado, palestrante como titular *e* reserva da
