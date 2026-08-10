@@ -89,4 +89,59 @@ export const marcarRealizada = (id, presentes) =>
     body: JSON.stringify({ presentes }),
   });
 
+// ---------- times ----------
+
+export const listarTimes = () => pedir('/api/times');
+
+export const buscarTime = (id) => pedir(`/api/times/${id}`);
+
+export const criarTime = (nome) =>
+  pedir('/api/times', { method: 'POST', body: JSON.stringify({ nome }) });
+
+export const renomearTime = (id, nome) =>
+  pedir(`/api/times/${id}`, { method: 'PATCH', body: JSON.stringify({ nome }) });
+
+export const excluirTime = (id) =>
+  pedir(`/api/times/${id}`, { method: 'DELETE' });
+
+// ---------- coordenadores ----------
+
+export const listarCoordenadores = ({ timeId, semTime } = {}) => {
+  const params = new URLSearchParams();
+  if (semTime) params.set('sem_time', '1');
+  else if (timeId) params.set('time_id', timeId);
+  const qs = params.toString();
+  return pedir(`/api/coordenadores${qs ? `?${qs}` : ''}`);
+};
+
+export const criarCoordenador = (dados) =>
+  pedir('/api/coordenadores', { method: 'POST', body: JSON.stringify(dados) });
+
+export const editarCoordenador = (id, dados) =>
+  pedir(`/api/coordenadores/${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+
+export const vincularCoordenador = (id, timeId) =>
+  pedir(`/api/coordenadores/${id}/time`, {
+    method: 'PATCH',
+    body: JSON.stringify({ time_id: timeId }),
+  });
+
+export const excluirCoordenador = (id) =>
+  pedir(`/api/coordenadores/${id}`, { method: 'DELETE' });
+
+// Importação de planilha: envia o arquivo cru; recebe a prévia (sem gravar).
+export const importarPreviaPlanilha = async (file) => {
+  const buffer = await file.arrayBuffer();
+  return pedir(
+    `/api/coordenadores/importar/previa?arquivo=${encodeURIComponent(file.name)}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buffer }
+  );
+};
+
+export const importarConfirmarPlanilha = (linhas) =>
+  pedir('/api/coordenadores/importar/confirmar', {
+    method: 'POST',
+    body: JSON.stringify({ linhas }),
+  });
+
 export { ErroApi };

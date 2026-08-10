@@ -1,0 +1,71 @@
+/* Times e Coordenadores — reaproveita a paleta e as classes de styles.css. */
+
+/* Formulário de novo time: campo + botão na mesma linha. */
+.time-novo {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  border-left: 3px solid var(--dourado);
+}
+.time-novo .campo { flex: 1 1 auto; }
+
+/* ---------- card de time ---------- */
+.time-cabeca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.time-info { display: flex; align-items: baseline; gap: 12px; }
+.time-nome { font-weight: 700; font-size: 16px; }
+.time-contagem { font-size: 13px; color: var(--cinza); }
+.time-acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.time-painel {
+  border-top: 1px solid var(--linha);
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+/* Seletor de vincular coordenador. */
+.vincular { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.vincular select { flex: 1 1 260px; }
+
+/* Lista de coordenadores dentro do time. */
+.lista-coord { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.coord-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-pequeno);
+  background: var(--bege);
+}
+.coord-nome { font-weight: 600; font-size: 14px; }
+
+/* ---------- item de coordenador na listagem ---------- */
+.coord-item { grid-template-columns: minmax(0, 1fr) 160px auto; }
+.coord-time-select select { width: 100%; }
+
+/* ---------- importar planilha ---------- */
+.import-previa { border-left: 3px solid var(--dourado); margin-bottom: 24px; }
+.import-previa h2 { margin-bottom: 8px; }
+.import-resumo { font-size: 14px; margin: 0 0 6px; }
+.import-times { font-size: 13.5px; color: var(--tinta-suave); margin: 0 0 12px; }
+.import-tabela-caixa { max-height: 320px; overflow: auto; border: 1px solid var(--linha); border-radius: var(--raio-pequeno); margin-bottom: 14px; }
+.import-tabela-caixa .tabela th { position: sticky; top: 0; }
+.linha-ignorada { opacity: 0.55; }
+
+@media (max-width: 700px) {
+  .coord-item {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'principal' 'time' 'acoes';
+  }
+  .coord-item > .item-principal { grid-area: principal; }
+  .coord-item > .coord-time-select { grid-area: time; }
+  .coord-item > .item-acoes { grid-area: acoes; }
+  .time-cabeca { align-items: flex-start; }
+}

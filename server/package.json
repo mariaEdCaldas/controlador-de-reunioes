@@ -9,11 +9,13 @@
     "start": "node src/index.js",
     "migrate": "node src/migrate-cli.js",
     "seed": "node src/seed.js",
+    "carga": "node src/carga-coordenadores.js",
     "db:reset": "node src/db-reset.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",
     "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
     "express": "^4.21.2"
   }
 }

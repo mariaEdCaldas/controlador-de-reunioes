@@ -3,12 +3,16 @@ import Palestrantes from './Palestrantes.jsx';
 import Agenda from './Agenda.jsx';
 import NovaReuniao from './NovaReuniao.jsx';
 import Historico from './Historico.jsx';
+import Times from './Times.jsx';
+import Coordenadores from './Coordenadores.jsx';
 
 const NAV = [
   { id: 'agenda', rotulo: 'Agenda' },
   { id: 'nova', rotulo: 'Nova reunião' },
   { id: 'palestrantes', rotulo: 'Palestrantes' },
   { id: 'historico', rotulo: 'Histórico' },
+  { id: 'times', rotulo: 'Times' },
+  { id: 'coordenadores', rotulo: 'Coordenadores' },
 ];
 
 export default function App() {
@@ -61,6 +65,8 @@ export default function App() {
         {aba === 'nova' && <NovaReuniao aoConcluir={voltarParaAgenda} />}
         {aba === 'palestrantes' && <Palestrantes />}
         {aba === 'historico' && <Historico />}
+        {aba === 'times' && <Times />}
+        {aba === 'coordenadores' && <Coordenadores />}
       </main>
     </div>
   );
