@@ -1,0 +1,188 @@
+/**
+ * Relação oficial Bairro → Região Urbana de Campo Grande/MS (as 7 regiões:
+ * Centro, Segredo, Prosa, Bandeira, Anhanduizinho, Lagoa e Imbirussu),
+ * transcrita da tabela de regiões do município.
+ *
+ * Serve para AGRUPAR as reuniões da agenda por região a partir do bairro
+ * informado em cada reunião — o campo "Bairro / região" da reunião pode vir
+ * como "Amambaí/Centro" (com a região após a barra) ou só como o bairro
+ * ("Caiçara"). Nos dois casos `regiaoDaReuniao()` descobre a região.
+ */
+
+/** Ordem em que as regiões aparecem na tela (do centro para as bordas). */
+export const REGIOES_ORDEM = [
+  'Centro',
+  'Segredo',
+  'Prosa',
+  'Bandeira',
+  'Anhanduizinho',
+  'Lagoa',
+  'Imbirussu',
+];
+
+/** Rótulo mostrado para cada região (o Segredo aparece como "Mata do Segredo"). */
+export const REGIAO_ROTULO = {
+  Centro: 'Centro',
+  Segredo: 'Mata do Segredo',
+  Prosa: 'Prosa',
+  Bandeira: 'Bandeira',
+  Anhanduizinho: 'Anhanduizinho',
+  Lagoa: 'Lagoa',
+  Imbirussu: 'Imbirussu',
+  'Sem região': 'Sem região definida',
+};
+
+/** Bairros de cada região, conforme a tabela oficial (imagem de regiões). */
+const BAIRROS_POR_REGIAO = {
+  Centro: [
+    'Amambai', 'Amambaí', 'Bela Vista', 'Cabreúva', 'Vila Célia', 'Ieda',
+    'Vila Progresso', 'Centro', 'Cruzeiro', 'Glória', 'Itanhangá',
+    'Jardim dos Estados', 'Monte Líbano', 'Planalto', 'São Bento', 'São Francisco',
+    'Eudes Costa', 'Santa Dorothéia', 'Vila Rosa', 'Vila Rica', 'Manoel da Costa Lima',
+    'Vila Antônio Vendas', 'Vila Antonio Vendas',
+  ],
+  Segredo: [
+    'Jardim Anache', 'Cerejeiras', 'Coronel Antonino', 'Monte Castelo', 'José Abrão',
+    'Jardim Imperial', 'Nasser', 'Nova Lima', 'Seminário', 'Presidente', 'Vida Nova',
+    'Jardim Colúmbia', 'Jardim Columbia', 'Tarsila do Amaral', 'Parque dos Laranjais',
+    'Campo Belo', 'Campo Novo', 'Otávio Pécora', 'Estrela do Sul', 'Vila Santa Luzia',
+    'Santa Luzia', 'Jardim Guanabara', 'Nascente do Segredo', 'Nossa Senhora Aparecida',
+    'Nossa Sra Aparecida', 'Nossa Sª Aparecida', 'Vila Marli',
+  ],
+  Prosa: [
+    'Autonomista', 'Carandá', 'Vila Nascente', 'Chácara Cachoeira', 'Cidade Jardim',
+    'Chácara dos Poderes', 'Estrela Dalva', 'Margarida', 'Mata do Jacinto', 'Noroeste',
+    'Vila Futurista', 'Danúbio Azul', 'Novos Estados', 'Taquaral Bosque',
+    'Jardim Montevideu', 'Veraneio', 'Jardim Veraneio', 'Vivendas do Bosque',
+    'Vila Miguel Couto', 'Novo Maranhão', 'Nova Bahia', 'Carandá Bosque',
+    'Residencial Sóter', 'Residencial Soter', 'Res Sóter', 'Res Soter',
+  ],
+  Bandeira: [
+    'Maria Aparecida Pedrossian', 'Tiradentes', 'São Lourenço', 'Vilasboas',
+    'Vilas Boas', 'TV Morena', 'Jardim Paulista', 'Dr. Albuquerque',
+    'Doutor Albuquerque', 'Carlota', 'Rita Vieira', 'Universitário', 'Moreninha',
+    'Arnaldo Estevão', 'Recanto dos Rouxinóis', 'Coopharádio', 'Vila Santo Eugênio',
+    'Cidade Morena', 'Jardim Flamboyant', 'Jardim Itamaracá', 'Jardim Noroeste',
+    'Jardim Pacaembu', 'Residencial Oiti', 'Moreninha III', 'Moreninha II', 'Moreninha I',
+    'Jardim Tropical',
+  ],
+  Anhanduizinho: [
+    'Aero Rancho', 'Alves Pereira', 'América', 'Centenário', 'Centro-Oeste',
+    'Centro Oeste', 'Guanandi', 'Jacy', 'Jockey Clube', 'Jockey Club', 'Lageado',
+    'Los Angeles', 'Parati', 'Pioneiros', 'Piratininga', 'Taquarussu',
+    'Jardim das Hortências', 'Guanandi II', 'Granja São Luiz', 'Botafogo',
+    'Dom Antônio', 'Vila Santa Branca', 'Carvalho', 'Jardim Canguru', 'São Pedo',
+    'São Pedro', 'Jardim Colibri II', 'Jardim Colonial', 'Jardim das Macaúbas',
+    'Jardim das Meninas', 'Jardim Morenão', 'Paulo Coelho Machado', 'Iracy Coelho',
+    'Residencial Betaville', 'Jardim Uirapuru', 'Jardim Pênfigo', 'Jardim Penfigo',
+    'Jd Pênfigo', 'Jd Penfico',
+  ],
+  Lagoa: [
+    'Bandeirantes', 'Jardim Batistão', 'Batistão', 'Caiçara', 'Caiobá',
+    'Coophavilla II', 'Coophavila II', 'Coophavilla', 'Coophavila', 'Coophavilla 2',
+    'Coophavila 2', 'Coophavilla II', 'Leblon', 'Santa Emília', 'Aquários 1',
+    'Aquários 2', 'São Conrado', 'Taveirópolis', 'Belo Horizonte', 'Tarumã',
+    'Tijuca', 'União', 'Vila Jussara', 'Bon Jardim', 'Bonjardim', 'Bonança', 'Buriti',
+    'Estrela Dalva', 'Moreninhas', 'Vila Kellen', 'Vila Anahy',
+  ],
+  Imbirussu: [
+    'Região do Imbirussu', 'Indubrasil', 'Nova Campo Grande', 'Panamá', 'Popular',
+    'Santo Amaro', 'Santa Carmélia', 'Santo Antônio', 'Vila Sobrinho', 'Zé Pereira',
+    'Vila Alba', 'Jardim Carioca', 'Vila Bordon', 'Coophatrabalho', 'Silvia Regina',
+    'Palmira', 'Vila Eliane', 'Vila Corumbá', 'Vila Almeida', 'Jardim Petrópolis',
+    'Jardim Imá', 'Lar do Trabalhador', 'Núcleo Industrial', 'Jardim Canadá', 'Jd Canadá',
+  ],
+};
+
+/** Normaliza para comparar sem depender de acento, caixa ou espaços extras. */
+function normalizar(texto) {
+  return String(texto ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Índice bairro(normalizado) -> região, montado uma vez.
+const INDICE_BAIRRO = {};
+for (const [regiao, bairros] of Object.entries(BAIRROS_POR_REGIAO)) {
+  for (const b of bairros) INDICE_BAIRRO[normalizar(b)] = regiao;
+}
+
+// Nomes de região aceitos após a barra (inclui "Mata do Segredo" -> Segredo).
+const INDICE_REGIAO = {};
+for (const r of REGIOES_ORDEM) INDICE_REGIAO[normalizar(r)] = r;
+INDICE_REGIAO[normalizar('Mata do Segredo')] = 'Segredo';
+
+/**
+ * Descobre a região de uma reunião a partir do texto do campo "Bairro / região".
+ * 1º) se vier "Bairro/Região" e a parte após a barra for uma região conhecida,
+ *     respeita ela (foi o que a pessoa escolheu/cadastrou);
+ * 2º) senão, procura o bairro na relação oficial.
+ * Retorna null quando não dá para identificar.
+ */
+export function regiaoDaReuniao(valor) {
+  const v = String(valor ?? '').trim();
+  if (!v) return null;
+
+  if (v.includes('/')) {
+    const sufixo = normalizar(v.split('/').pop());
+    if (INDICE_REGIAO[sufixo]) return INDICE_REGIAO[sufixo];
+    // A barra pode separar bairro/bairro; tenta o começo como bairro.
+    const inicio = normalizar(v.split('/')[0]);
+    if (INDICE_BAIRRO[inicio]) return INDICE_BAIRRO[inicio];
+  }
+
+  const chave = normalizar(v);
+  if (INDICE_REGIAO[chave]) return INDICE_REGIAO[chave]; // digitou só a região
+  return INDICE_BAIRRO[chave] ?? null;
+}
+
+/**
+ * Agrupa uma lista por região (na ordem oficial), devolvendo só as regiões que
+ * têm itens; os não identificados caem em "Sem região" no fim.
+ *
+ * `obterBairro` diz de onde tirar o texto do bairro em cada item — por padrão o
+ * campo `regiao` (reuniões); para coordenadores passe `(c) => c.bairro`.
+ */
+export function agruparPorRegiao(itens, obterBairro = (item) => item.regiao) {
+  const mapa = new Map();
+  for (const item of itens) {
+    const regiao = regiaoDaReuniao(obterBairro(item)) ?? 'Sem região';
+    if (!mapa.has(regiao)) mapa.set(regiao, []);
+    mapa.get(regiao).push(item);
+  }
+  return [...REGIOES_ORDEM, 'Sem região']
+    .filter((regiao) => mapa.has(regiao))
+    .map((regiao) => ({ regiao, rotulo: REGIAO_ROTULO[regiao], itens: mapa.get(regiao) }));
+}
+
+/**
+ * Contagem por região para a visão de relance (painel BI): TODAS as 7 regiões
+ * (mesmo com 0), ordenadas da com mais itens para a com menos. "Sem região"
+ * entra no fim apenas se houver algum. Traz também o total e o maior valor.
+ */
+export function contagemPorRegiao(itens, obterBairro = (item) => item.regiao) {
+  const contagem = Object.fromEntries(REGIOES_ORDEM.map((r) => [r, 0]));
+  let semRegiao = 0;
+  for (const item of itens) {
+    const regiao = regiaoDaReuniao(obterBairro(item));
+    if (regiao) contagem[regiao] += 1;
+    else semRegiao += 1;
+  }
+
+  const linhas = REGIOES_ORDEM.map((regiao) => ({
+    regiao,
+    rotulo: REGIAO_ROTULO[regiao],
+    n: contagem[regiao],
+  }));
+  if (semRegiao > 0) {
+    linhas.push({ regiao: 'Sem região', rotulo: REGIAO_ROTULO['Sem região'], n: semRegiao });
+  }
+  linhas.sort((a, b) => b.n - a.n);
+
+  const total = itens.length;
+  const maximo = linhas.reduce((m, l) => Math.max(m, l.n), 0);
+  return { linhas, total, maximo };
+}

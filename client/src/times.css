@@ -46,9 +46,49 @@
 }
 .coord-nome { font-weight: 600; font-size: 14px; }
 
-/* ---------- item de coordenador na listagem ---------- */
-.coord-item { grid-template-columns: minmax(0, 1fr) 160px auto; }
+/* ---------- item de coordenador na listagem ----------
+   Layout flexível (não grade rígida) para caber bem também com o card em meia
+   largura (duas colunas): o nome cresce, o seletor de time fica fixo e os botões
+   descem para a linha de baixo quando o espaço aperta. */
+.coord-item {
+  display: flex;
+  align-items: center;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+}
+.coord-item > .item-principal { flex: 1 1 220px; min-width: 0; }
+.coord-item > .coord-time-select { flex: 0 0 150px; }
+.coord-item > .item-acoes { flex: 1 1 auto; justify-content: flex-end; flex-wrap: wrap; }
 .coord-time-select select { width: 100%; }
+.coord-extra { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--cinza); margin-top: 3px; }
+.coord-rede { color: var(--tinta-suave); }
+
+/* Card da visão "Coordenadores por região" (só leitura): o nome ocupa a maior
+   parte e os botões de contato ficam à direita, sem espremer o nome. */
+.coord-regiao-card {
+  display: flex;
+  align-items: center;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+.coord-regiao-card > .item-principal { flex: 1 1 260px; min-width: 0; }
+.coord-regiao-card > .item-acoes { flex: 0 0 auto; margin-left: auto; display: flex; gap: 6px; }
+.coord-regiao-card .item-nome { font-weight: 600; }
+
+/* Selo do time ao lado do nome (na visão por região, que é só leitura). */
+.time-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7a5c12;
+  background: var(--dourado-claro);
+  border: 1px solid var(--dourado-linha);
+  border-radius: 20px;
+  padding: 1px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
 
 /* ---------- importar planilha ---------- */
 .import-previa { border-left: 3px solid var(--dourado); margin-bottom: 24px; }
@@ -90,12 +130,9 @@
 .lembrete-detalhe .ok { color: var(--verde); font-weight: 600; }
 
 @media (max-width: 700px) {
-  .coord-item {
-    grid-template-columns: 1fr;
-    grid-template-areas: 'principal' 'time' 'acoes';
-  }
-  .coord-item > .item-principal { grid-area: principal; }
-  .coord-item > .coord-time-select { grid-area: time; }
-  .coord-item > .item-acoes { grid-area: acoes; }
+  /* No celular o card empilha tudo (o flex-wrap já cuida disso); o seletor de
+     time passa a ocupar a largura inteira. */
+  .coord-item { align-items: stretch; }
+  .coord-item > .coord-time-select { flex: 1 1 100%; }
   .time-cabeca { align-items: flex-start; }
 }
