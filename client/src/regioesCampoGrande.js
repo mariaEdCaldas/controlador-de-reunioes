@@ -88,11 +88,26 @@ const BAIRROS_POR_REGIAO = {
   Imbirussu: [
     'Região do Imbirussu', 'Indubrasil', 'Nova Campo Grande', 'Panamá', 'Popular',
     'Santo Amaro', 'Santa Carmélia', 'Santo Antônio', 'Vila Sobrinho', 'Zé Pereira',
-    'Vila Alba', 'Jardim Carioca', 'Vila Bordon', 'Coophatrabalho', 'Silvia Regina',
+    'Vila Alba', 'Jardim Carioca', 'Vila Bordon', 'Coophatrabalho', 'Coopatrabalho',
+    'Coop Trabalho', 'Silvia Regina',
     'Palmira', 'Vila Eliane', 'Vila Corumbá', 'Vila Almeida', 'Jardim Petrópolis',
     'Jardim Imá', 'Lar do Trabalhador', 'Núcleo Industrial', 'Jardim Canadá', 'Jd Canadá',
   ],
 };
+
+/**
+ * Sugestões para o campo "Bairro / região" do cadastro de reunião: cada bairro
+ * oficial já com a sua região, no formato "Bairro/Região". Escolhendo da lista,
+ * o valor guardado carrega a região (após a barra), então a reunião sempre fica
+ * com região definida na agenda por região.
+ */
+export const SUGESTOES_BAIRRO = [
+  ...new Set(
+    Object.entries(BAIRROS_POR_REGIAO).flatMap(([regiao, bairros]) =>
+      bairros.map((b) => `${b}/${regiao}`)
+    )
+  ),
+].sort((a, b) => a.localeCompare(b, 'pt'));
 
 /** Normaliza para comparar sem depender de acento, caixa ou espaços extras. */
 function normalizar(texto) {

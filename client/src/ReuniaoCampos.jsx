@@ -1,5 +1,6 @@
 import { formatarTelefone, mascaraData } from './regioes.js';
 import { CANDIDATOS } from './candidatos.js';
+import { SUGESTOES_BAIRRO } from './regioesCampoGrande.js';
 
 const HORAS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = ['00', '15', '30', '45'];
@@ -16,6 +17,12 @@ export default function ReuniaoCampos({
   form, erros, regioes, coordenadores, coordSelecionado, setCampo, mudarCoordenador,
 }) {
   const [horaSel = '', minSel = ''] = String(form.hora ?? '').split(':');
+
+  // Lista completa para o campo de bairro: todos os bairros oficiais (com a
+  // região) mais o que já existir no banco, sem repetir.
+  const opcoesBairro = [
+    ...new Set([...SUGESTOES_BAIRRO, ...regioes.map((r) => r.nome)]),
+  ].sort((a, b) => a.localeCompare(b, 'pt'));
 
   return (
     <>
@@ -67,11 +74,11 @@ export default function ReuniaoCampos({
           </datalist>
           {coordSelecionado ? (
             <small className="dica">
-              Tel: {formatarTelefone(coordSelecionado.telefone) || 'sem número'}
-              {coordSelecionado.bairro ? ` · ${coordSelecionado.bairro}` : ''} — entra na folha.
+              Tel: {formatarTelefone(coordSelecionado.telefone) || 'sem número'} — entra na folha.
+              O bairro da reunião é o do local (abaixo), não o do coordenador.
             </small>
           ) : (
-            <small className="dica">Ao escolher, o bairro e o telefone dele vêm junto.</small>
+            <small className="dica">Ao escolher, o telefone dele entra na folha. O bairro é o do local da reunião.</small>
           )}
         </label>
 
@@ -85,8 +92,8 @@ export default function ReuniaoCampos({
             aria-invalid={Boolean(erros.regiao)}
           />
           <datalist id="lista-regioes">
-            {regioes.map((r) => (
-              <option key={r.id} value={r.nome} />
+            {opcoesBairro.map((nome) => (
+              <option key={nome} value={nome} />
             ))}
           </datalist>
           {erros.regiao && <small className="erro-campo">{erros.regiao}</small>}

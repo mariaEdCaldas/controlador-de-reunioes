@@ -40,16 +40,13 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
     setErros((x) => ({ ...x, [campo]: undefined }));
   };
 
+  // O bairro/região é o do LOCAL da reunião — não herda o bairro do coordenador.
   function mudarCoordenador(e) {
     const valor = e.target.value;
     const match = coordenadores.find(
       (c) => c.nome.toLowerCase() === valor.trim().toLowerCase()
     );
-    setForm((f) => ({
-      ...f,
-      coordenador: valor,
-      ...(match && match.bairro ? { regiao: match.bairro } : {}),
-    }));
+    setForm((f) => ({ ...f, coordenador: valor }));
     setCoordSelecionado(match ?? null);
   }
 

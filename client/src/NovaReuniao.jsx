@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { criarReuniao, listarRegioes, criarRegiao, listarCoordenadores } from './api.js';
 import { brParaIso } from './regioes.js';
-import Sugestoes from './Sugestoes.jsx';
-import FolhaImpressao from './FolhaImpressao.jsx';
 import ReuniaoCampos from './ReuniaoCampos.jsx';
 
 const VAZIO = {
@@ -22,8 +20,6 @@ export default function NovaReuniao({ aoConcluir }) {
   const [erros, setErros] = useState({});
   const [erroGeral, setErroGeral] = useState('');
   const [salvando, setSalvando] = useState(false);
-  const [criada, setCriada] = useState(null);
-  const [imprimindo, setImprimindo] = useState(false);
 
   useEffect(() => {
     listarRegioes().then(setRegioes).catch((e) => setErroGeral(e.message));
@@ -35,18 +31,15 @@ export default function NovaReuniao({ aoConcluir }) {
     setErros((x) => ({ ...x, [campo]: undefined }));
   };
 
-  // Ao escolher o coordenador, traz o bairro dele para o campo e mostra o
-  // telefone. O número final entra na folha via coordenador_id (no back).
+  // Ao escolher o coordenador, guardamos só a referência (o telefone dele entra
+  // na folha via coordenador_id). O bairro/região é o do LOCAL da reunião, então
+  // NÃO herda o bairro do coordenador — quem informa é o campo "Bairro / região".
   function mudarCoordenador(e) {
     const valor = e.target.value;
     const match = coordenadores.find(
       (c) => c.nome.toLowerCase() === valor.trim().toLowerCase()
     );
-    setForm((f) => ({
-      ...f,
-      coordenador: valor,
-      ...(match && match.bairro ? { regiao: match.bairro } : {}),
-    }));
+    setForm((f) => ({ ...f, coordenador: valor }));
     setCoordSelecionado(match ?? null);
   }
 
@@ -88,43 +81,15 @@ export default function NovaReuniao({ aoConcluir }) {
         qtd_cadeiras: form.qtd_cadeiras === '' ? null : Number(form.qtd_cadeiras),
         tem_som: form.tem_som,
       });
-      setCriada(reuniao);
+      // Salvou: volta direto para a agenda (a reunião já aparece lá). A alocação
+      // de palestrante fica só no botão do card, quando/se quiserem.
+      aoConcluir?.(reuniao);
     } catch (erro) {
       if (Object.keys(erro.campos ?? {}).length > 0) setErros(erro.campos);
       else setErroGeral(erro.message);
     } finally {
       setSalvando(false);
     }
-  }
-
-  if (criada) {
-    return (
-      <section>
-        <header className="cabecalho-secao">
-          <div>
-            <h1>Reunião criada</h1>
-            <p className="sub">
-              <strong>{criada.nome}</strong> — {criada.endereco}. Já pode imprimir a folha.
-            </p>
-          </div>
-          <div className="acoes-form" style={{ marginTop: 0 }}>
-            <button className="botao primario" onClick={() => setImprimindo(true)}>
-              Imprimir folha
-            </button>
-            <button className="botao" onClick={() => aoConcluir?.()}>Ir para a agenda</button>
-          </div>
-        </header>
-
-        {imprimindo && (
-          <FolhaImpressao reuniao={criada} aoFechar={() => setImprimindo(false)} />
-        )}
-
-        <p className="sub" style={{ margin: '4px 0 12px' }}>
-          Se quiser, aloque também um palestrante por proximidade:
-        </p>
-        <Sugestoes reuniaoId={criada.id} />
-      </section>
-    );
   }
 
   return (
