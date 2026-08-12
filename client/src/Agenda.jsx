@@ -7,6 +7,7 @@ import EditarReuniao from './EditarReuniao.jsx';
 import FinalizarReuniao from './FinalizarReuniao.jsx';
 import Busca, { contemBusca } from './Busca.jsx';
 import { agruparPorRegiao, contagemPorRegiao } from './regioesCampoGrande.js';
+import { compartilharFolhaWhatsapp } from './compartilharFolha.jsx';
 
 /** Ícone do WhatsApp por imagem (/icones/whatsapp.png); cai no emoji se faltar. */
 function IconeWhatsapp() {
@@ -59,20 +60,6 @@ function hojeISO() {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-/** Monta o link do WhatsApp com o convite da reunião pronto para compartilhar. */
-function linkConvite(r) {
-  const texto = [
-    `*${(r.nome || 'Reunião').toUpperCase()}*`,
-    r.candidato ? `Com Paulo Corrêa e ${r.candidato}` : null,
-    `Dia ${formatarData(r.data)} às ${r.hora}`,
-    `Local: ${r.endereco}${r.regiao ? ` - ${r.regiao}` : ''}, Campo Grande - MS`,
-    r.coordenador_nome ? `Contato: ${r.coordenador_nome}` : null,
-  ]
-    .filter(Boolean)
-    .join('\n');
-  return `https://wa.me/?text=${encodeURIComponent(texto)}`;
-}
-
 export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
   const [reunioes, setReunioes] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -81,7 +68,21 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
   const [imprimir, setImprimir] = useState(null); // reunião cuja folha está aberta
   const [editar, setEditar] = useState(null); // reunião sendo editada
   const [finalizar, setFinalizar] = useState(null); // reunião sendo finalizada
+  const [compartilhandoId, setCompartilhandoId] = useState(null); // gerando imagem
   const [busca, setBusca] = useState('');
+
+  // Gera a folha da reunião como imagem e abre o compartilhamento (WhatsApp).
+  async function compartilhar(reuniao) {
+    setCompartilhandoId(reuniao.id);
+    setErro('');
+    try {
+      await compartilharFolhaWhatsapp(reuniao);
+    } catch (e) {
+      setErro(e.message || 'Não consegui gerar a imagem para compartilhar.');
+    } finally {
+      setCompartilhandoId(null);
+    }
+  }
 
   const carregar = () =>
     listarReunioes()
@@ -155,6 +156,8 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
       aoEditar={() => setEditar(r)}
       aoExcluir={() => excluir(r)}
       aoFinalizar={() => setFinalizar(r)}
+      aoCompartilhar={() => compartilhar(r)}
+      compartilhando={compartilhandoId === r.id}
       aoAtualizar={(atualizada) => {
         substituir(atualizada);
         setAlocando(null);
@@ -240,7 +243,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
   );
 }
 
-function ItemReuniao({ reuniao: r, aberto, aoAbrir, aoAlternarItem, aoImprimir, aoEditar, aoExcluir, aoFinalizar, aoRecarregar }) {
+function ItemReuniao({ reuniao: r, aberto, aoAbrir, aoAlternarItem, aoImprimir, aoEditar, aoExcluir, aoFinalizar, aoCompartilhar, compartilhando, aoRecarregar }) {
   const realizada = r.status === 'realizada';
   // Passou da data e ainda não foi finalizada: precisa de atenção.
   const atrasada = !realizada && r.data < hojeISO();
@@ -340,16 +343,16 @@ function ItemReuniao({ reuniao: r, aberto, aoAbrir, aoAlternarItem, aoImprimir, 
         <div className="reuniao-icones">
           <button className="botao icone" onClick={aoEditar} title="Editar informações" aria-label="Editar">✏️</button>
           <button className="botao icone" onClick={aoImprimir} title="Imprimir folha" aria-label="Imprimir">🖨️</button>
-          <a
+          <button
+            type="button"
             className="botao icone whatsapp-icone"
-            href={linkConvite(r)}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Compartilhar convite no WhatsApp"
+            onClick={aoCompartilhar}
+            disabled={compartilhando}
+            title="Compartilhar a folha (imagem) no WhatsApp"
             aria-label="Compartilhar no WhatsApp"
           >
-            <IconeWhatsapp />
-          </a>
+            {compartilhando ? '…' : <IconeWhatsapp />}
+          </button>
           <button className="botao icone" onClick={aoExcluir} title="Excluir reunião" aria-label="Excluir">🗑️</button>
         </div>
 
