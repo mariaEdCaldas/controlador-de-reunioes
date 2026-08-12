@@ -166,6 +166,28 @@ Tudo está em [client/src/styles.css](client/src/styles.css) (as cores, no `:roo
 do topo) e em [client/src/regioes.js](client/src/regioes.js) (a cor de cada
 bairro). Em telas estreitas, a lateral vira uma barra horizontal no topo.
 
+## Folha de impressão da reunião
+
+Cada reunião pode ser impressa (ou salva em PDF) no padrão da Agenda Capital:
+botão **Imprimir** em cada item da Agenda, ou logo depois de cadastrar. Abre a
+folha com o cabeçalho da dupla (Paulo Corrêa + o outro responsável) e a caixa
+com data/dia, horário, nome, endereço, contato do coordenador, cadeiras e som.
+Use `Imprimir / Salvar PDF` — dá para mandar direto para a impressora ou salvar
+em PDF.
+
+### As artes do cabeçalho
+
+O cabeçalho usa a arte (com as fotos) de cada candidato, em
+[client/public/artes/](client/public/artes/), com o nome `<slug>.png`
+(`rose-modesto.png`, `jaime-verruck.png`, `viviane-luiza.png`, etc. — a lista
+completa está no `LEIA-ME.txt` de lá). Enquanto o arquivo não estiver lá, a
+folha usa um cabeçalho provisório no mesmo estilo, só com os nomes (sem fotos).
+Basta soltar os PNGs na pasta — não precisa reiniciar nada.
+
+> Observação: os campos novos (nome, responsáveis, coordenador, cadeiras, som)
+> são preenchidos no cadastro de **novas** reuniões. Reuniões antigas, criadas
+> antes disso, saem na folha com o que tinham.
+
 ## Lembretes por e-mail (véspera das reuniões)
 
 São dois e-mails automáticos:
