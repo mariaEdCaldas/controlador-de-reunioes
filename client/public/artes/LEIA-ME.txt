@@ -1,0 +1,23 @@
+ARTES DO CABEÇALHO DA FOLHA DE IMPRESSÃO
+========================================
+
+Coloque aqui a arte (com as fotos) de cada candidato, em PNG, com estes nomes
+exatos:
+
+  rose-modesto.png
+  jaime-verruck.png
+  viviane-luiza.png
+  carlos-bernardo.png
+  mara-caseiro.png
+  giroto.png
+  luana-ruiz.png
+  beto-pereira.png
+
+- A imagem deve ser o banner completo (AGENDA CAPITAL + PAULO CORRÊA + o outro
+  candidato), como no modelo. Largura sugerida: ~1500 px.
+- O nome do arquivo tem que ser exatamente o slug acima (minúsculas, com hífen).
+- Enquanto o arquivo de um candidato não estiver aqui, a folha usa um cabeçalho
+  provisório no mesmo estilo, só com os nomes (sem as fotos).
+
+Depois de colocar os arquivos, não precisa reiniciar nada: é só abrir a folha
+de novo.

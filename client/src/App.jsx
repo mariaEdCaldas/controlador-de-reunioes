@@ -1,25 +1,23 @@
 import { useState } from 'react';
-import Palestrantes from './Palestrantes.jsx';
-import Agenda from './Agenda.jsx';
+import PainelAgenda from './PainelAgenda.jsx';
 import NovaReuniao from './NovaReuniao.jsx';
-import Historico from './Historico.jsx';
-import Times from './Times.jsx';
-import Coordenadores from './Coordenadores.jsx';
+import Pessoas from './Pessoas.jsx';
 import Lembretes from './Lembretes.jsx';
+import AgendaRodrigo from './AgendaRodrigo.jsx';
 
 const NAV = [
   { id: 'agenda', rotulo: 'Agenda' },
-  { id: 'nova', rotulo: 'Nova reunião' },
-  { id: 'palestrantes', rotulo: 'Palestrantes' },
-  { id: 'historico', rotulo: 'Histórico' },
-  { id: 'times', rotulo: 'Times' },
-  { id: 'coordenadores', rotulo: 'Coordenadores' },
+  { id: 'rodrigo', rotulo: 'Agenda Dr Rodrigo' },
+  { id: 'pessoas', rotulo: 'Pessoas' },
   { id: 'lembretes', rotulo: 'Lembretes' },
 ];
 
 export default function App() {
   const [aba, setAba] = useState('agenda');
   const [recarga, setRecarga] = useState(0);
+  // Se a imagem do banner não estiver em client/public/paulo-correa.png,
+  // cai no texto para não deixar o menu quebrado.
+  const [semBanner, setSemBanner] = useState(false);
 
   function voltarParaAgenda() {
     setRecarga((n) => n + 1);
@@ -31,12 +29,17 @@ export default function App() {
       {/* Coluna lateral fixa (vira barra horizontal no topo em telas pequenas). */}
       <aside className="lateral">
         <div className="identidade">
+          {semBanner ? (
+            <div className="candidato">Dep. Paulo Corrêa</div>
+          ) : (
+            <img
+              className="banner-candidato"
+              src="/artes/paulo-correa-png.png"
+              alt="Deputado Estadual Paulo Corrêa"
+              onError={() => setSemBanner(true)}
+            />
+          )}
           <div className="numero">22.222</div>
-          <div className="candidato">Dep. Paulo Corrêa</div>
-          <div className="lema">“5 patinhos na lagoa”</div>
-          <div className="patinhos" aria-hidden="true">
-            <i /><i /><i /><i /><i />
-          </div>
         </div>
 
         <nav className="nav">
@@ -52,23 +55,16 @@ export default function App() {
           ))}
         </nav>
 
-        {/* Atalho sempre visível: cadastrar reunião é a ação mais frequente. */}
-        <button className="atalho" onClick={() => setAba('nova')}>
-          + Nova reunião
-        </button>
-
         <div className="rodape-lateral">Agenda de Palestrantes</div>
       </aside>
 
       <main className="conteudo">
         {aba === 'agenda' && (
-          <Agenda key={recarga} aoNovaReuniao={() => setAba('nova')} />
+          <PainelAgenda key={recarga} aoNovaReuniao={() => setAba('nova')} />
         )}
         {aba === 'nova' && <NovaReuniao aoConcluir={voltarParaAgenda} />}
-        {aba === 'palestrantes' && <Palestrantes />}
-        {aba === 'historico' && <Historico />}
-        {aba === 'times' && <Times />}
-        {aba === 'coordenadores' && <Coordenadores />}
+        {aba === 'rodrigo' && <AgendaRodrigo />}
+        {aba === 'pessoas' && <Pessoas />}
         {aba === 'lembretes' && <Lembretes />}
       </main>
     </div>
