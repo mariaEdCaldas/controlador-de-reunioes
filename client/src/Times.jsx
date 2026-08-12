@@ -8,6 +8,7 @@ import {
   vincularCoordenador,
 } from './api.js';
 import { formatarTelefone } from './regioes.js';
+import Busca, { contemBusca } from './Busca.jsx';
 import './times.css';
 
 /**
@@ -20,6 +21,8 @@ export default function Times() {
   const [times, setTimes] = useState([]);
   const [coordenadores, setCoordenadores] = useState([]);
   const [novoNome, setNovoNome] = useState('');
+  const [mostrarForm, setMostrarForm] = useState(false);
+  const [busca, setBusca] = useState('');
   const [aberto, setAberto] = useState(null);
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(true);
@@ -46,6 +49,7 @@ export default function Times() {
     try {
       await criarTime(nome);
       setNovoNome('');
+      setMostrarForm(false);
       await carregar();
     } catch (err) {
       setErro(err.message);
@@ -87,6 +91,8 @@ export default function Times() {
     }
   }
 
+  const visiveis = times.filter((t) => contemBusca(t.nome, busca));
+
   return (
     <section>
       <header className="cabecalho-secao">
@@ -97,29 +103,44 @@ export default function Times() {
             ver e vincular coordenadores
           </p>
         </div>
+        {!mostrarForm && (
+          <button className="botao primario" onClick={() => setMostrarForm(true)}>
+            + Novo time
+          </button>
+        )}
       </header>
 
-      <form className="cartao form time-novo" onSubmit={adicionar}>
-        <label className="campo">
-          <span>Novo time</span>
-          <input
-            value={novoNome}
-            onChange={(e) => setNovoNome(e.target.value)}
-            placeholder="Nome do time"
-          />
-        </label>
-        <button type="submit" className="botao primario">Cadastrar</button>
-      </form>
+      {mostrarForm && (
+        <form className="cartao form time-novo" onSubmit={adicionar}>
+          <label className="campo">
+            <span>Novo time</span>
+            <input
+              value={novoNome}
+              onChange={(e) => setNovoNome(e.target.value)}
+              placeholder="Nome do time"
+              autoFocus
+            />
+          </label>
+          <button type="submit" className="botao primario">Cadastrar</button>
+          <button type="button" className="botao" onClick={() => { setMostrarForm(false); setNovoNome(''); }}>
+            Cancelar
+          </button>
+        </form>
+      )}
+
+      <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar time…" />
 
       {erro && <p className="aviso erro">{erro}</p>}
 
       {carregando ? (
         <p className="vazio">Carregando…</p>
-      ) : times.length === 0 ? (
-        <p className="vazio">Nenhum time cadastrado ainda.</p>
+      ) : visiveis.length === 0 ? (
+        <p className="vazio">
+          {busca ? 'Nenhum time encontrado.' : 'Nenhum time cadastrado ainda.'}
+        </p>
       ) : (
         <ul className="lista">
-          {times.map((t) => {
+          {visiveis.map((t) => {
             const doTime = coordenadores.filter((c) => c.time_id === t.id);
             const disponiveis = coordenadores.filter((c) => c.time_id !== t.id);
             const expandido = aberto === t.id;

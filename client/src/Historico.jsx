@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listarReunioes } from './api.js';
 import { corDaRegiao, formatarData } from './regioes.js';
+import Busca, { contemBusca } from './Busca.jsx';
 
 /**
  * RN-10: só as reuniões já realizadas, em tabela.
@@ -13,6 +14,7 @@ export default function Historico() {
   const [reunioes, setReunioes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [busca, setBusca] = useState('');
 
   useEffect(() => {
     listarReunioes({ status: 'realizada' })
@@ -21,7 +23,10 @@ export default function Historico() {
       .finally(() => setCarregando(false));
   }, []);
 
-  const totalPresentes = reunioes.reduce((soma, r) => soma + (r.presentes ?? 0), 0);
+  const visiveis = reunioes.filter((r) =>
+    contemBusca(`${r.nome ?? ''} ${r.local ?? ''} ${r.endereco ?? ''} ${r.regiao ?? ''} ${r.titular_nome ?? ''}`, busca)
+  );
+  const totalPresentes = visiveis.reduce((soma, r) => soma + (r.presentes ?? 0), 0);
 
   return (
     <section>
@@ -32,15 +37,21 @@ export default function Historico() {
         </div>
       </header>
 
+      {reunioes.length > 0 && (
+        <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar no histórico…" />
+      )}
+
       {erro && <p className="aviso erro">{erro}</p>}
 
       {carregando ? (
         <p className="vazio">Carregando…</p>
       ) : reunioes.length === 0 ? (
         <p className="vazio">
-          Nenhuma reunião marcada como realizada ainda. Na Agenda, informe o número
-          de presentes e clique em “Marcar como realizada”.
+          Nenhuma reunião marcada como realizada ainda. Na Agenda, use o botão
+          “Finalizar” para registrar quantas pessoas foram.
         </p>
+      ) : visiveis.length === 0 ? (
+        <p className="vazio">Nenhuma reunião encontrada para essa busca.</p>
       ) : (
         <div className="cartao tabela-caixa">
           <table className="tabela">
@@ -54,11 +65,11 @@ export default function Historico() {
               </tr>
             </thead>
             <tbody>
-              {reunioes.map((r) => (
+              {visiveis.map((r) => (
                 <tr key={r.id}>
                   <td className="data nowrap">{formatarData(r.data)}</td>
                   <td>
-                    <strong>{r.local}</strong>
+                    <strong>{r.nome?.trim() || r.local || r.endereco}</strong>
                     <div className="celula-sub">{r.endereco}</div>
                   </td>
                   <td className="nowrap">
@@ -71,7 +82,7 @@ export default function Historico() {
                       {r.regiao}
                     </span>
                   </td>
-                  <td>{r.titular_nome}</td>
+                  <td>{r.titular_nome ?? <em style={{ color: '#9ca3af' }}>—</em>}</td>
                   <td className="num">{r.presentes}</td>
                 </tr>
               ))}
@@ -79,8 +90,8 @@ export default function Historico() {
             <tfoot>
               <tr>
                 <td colSpan="3">
-                  {reunioes.length} reuni{reunioes.length === 1 ? 'ão' : 'ões'} realizada
-                  {reunioes.length === 1 ? '' : 's'}
+                  {visiveis.length} reuni{visiveis.length === 1 ? 'ão' : 'ões'} realizada
+                  {visiveis.length === 1 ? '' : 's'}
                 </td>
                 <td className="rotulo-total">Total de presentes</td>
                 <td className="num">{totalPresentes}</td>

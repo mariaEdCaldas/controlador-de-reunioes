@@ -6,11 +6,13 @@ import {
 } from './api.js';
 import { corDaRegiao, formatarTelefone } from './regioes.js';
 import PalestranteForm from './PalestranteForm.jsx';
+import Busca, { contemBusca } from './Busca.jsx';
 
 export default function Palestrantes() {
   const [palestrantes, setPalestrantes] = useState([]);
   const [regioes, setRegioes] = useState([]);
   const [filtroRegiao, setFiltroRegiao] = useState('');
+  const [busca, setBusca] = useState('');
   // null = nenhum formulário aberto | 'novo' | objeto do palestrante em edição
   const [formulario, setFormulario] = useState(null);
   const [carregando, setCarregando] = useState(true);
@@ -52,6 +54,8 @@ export default function Palestrantes() {
     }
   }
 
+  const visiveis = palestrantes.filter((p) => contemBusca(`${p.nome} ${p.temas}`, busca));
+
   return (
     <section>
       <header className="cabecalho-secao">
@@ -81,6 +85,8 @@ export default function Palestrantes() {
         />
       )}
 
+      <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar por nome ou tema…" />
+
       <div className="filtro">
         <label>
           Bairro:{' '}
@@ -97,15 +103,17 @@ export default function Palestrantes() {
 
       {carregando ? (
         <p className="vazio">Carregando…</p>
-      ) : palestrantes.length === 0 ? (
+      ) : visiveis.length === 0 ? (
         <p className="vazio">
-          {filtroRegiao
-            ? 'Nenhum palestrante cadastrado neste bairro.'
-            : 'Nenhum palestrante cadastrado ainda.'}
+          {busca
+            ? 'Nenhum palestrante encontrado para essa busca.'
+            : filtroRegiao
+              ? 'Nenhum palestrante cadastrado neste bairro.'
+              : 'Nenhum palestrante cadastrado ainda.'}
         </p>
       ) : (
         <ul className="lista">
-          {palestrantes.map((p) => (
+          {visiveis.map((p) => (
             <li key={p.id} className={`cartao item ${p.ativo ? '' : 'inativo'}`}>
               <div className="item-principal">
                 <div className="item-nome">
