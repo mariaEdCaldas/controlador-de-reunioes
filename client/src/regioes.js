@@ -44,6 +44,28 @@ export function formatarData(data) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : data;
 }
 
+/** Converte "11/08/2026" (dd/mm/aaaa) para "2026-08-11" (ISO). '' se inválida. */
+export function brParaIso(br) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(br ?? '').trim());
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  const iso = `${y}-${mo}-${d}`;
+  const dt = new Date(`${iso}T12:00:00Z`);
+  // Recusa datas impossíveis (ex.: 31/02): o Date "corrige" e não bate mais.
+  if (dt.getUTCDate() !== Number(d) || dt.getUTCMonth() + 1 !== Number(mo)) return '';
+  return iso;
+}
+
+/** Vai formatando o que o usuário digita como dd/mm/aaaa (só dígitos + barras). */
+export function mascaraData(valor) {
+  const dig = String(valor ?? '').replace(/\D/g, '').slice(0, 8);
+  const partes = [];
+  if (dig.length > 0) partes.push(dig.slice(0, 2));
+  if (dig.length >= 3) partes.push(dig.slice(2, 4));
+  if (dig.length >= 5) partes.push(dig.slice(4, 8));
+  return partes.join('/');
+}
+
 export const ROTULO_STATUS = {
   a_confirmar: 'A confirmar',
   confirmada: 'Confirmada',

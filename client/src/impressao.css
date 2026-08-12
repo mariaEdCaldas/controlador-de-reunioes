@@ -1,0 +1,126 @@
+/* Folha de impressão da reunião (padrão da Agenda Capital). */
+
+.impressao-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 30, 20, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px;
+  overflow: auto;
+  z-index: 100;
+}
+.impressao-caixa {
+  width: 100%;
+  max-width: 780px;
+}
+.impressao-acoes {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+/* A folha em si (o que vai para a impressão). */
+.folha {
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  color: #111;
+  font-family: 'Arial', system-ui, sans-serif;
+}
+
+.folha-arte { display: block; width: 100%; height: auto; }
+
+/* Cabeçalho de fallback (sem a foto), no estilo da arte. */
+.folha-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: #0a2a7a;
+  color: #fff;
+  padding: 18px 26px;
+}
+.fc-agenda { line-height: 0.95; }
+.fc-agenda b { display: block; font-size: 30px; font-weight: 900; color: #ffd21e; letter-spacing: 1px; }
+.fc-agenda span { display: block; font-size: 22px; font-weight: 800; }
+.fc-paulo { border-left: 2px solid rgba(255,255,255,0.3); padding-left: 20px; }
+.fc-paulo small { display: block; font-size: 10px; letter-spacing: 1px; }
+.fc-paulo b { font-size: 26px; font-weight: 900; color: #ffd21e; line-height: 1; }
+.fc-dupla { margin-left: auto; display: flex; gap: 8px; }
+.fc-dupla span {
+  background: #ffd21e;
+  color: #0a2a7a;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* Corpo: caixa com os dados, como no PDF. */
+.folha-corpo { border: 2px solid #111; margin: 0; }
+.folha-corpo > * { border-bottom: 1.5px solid #111; padding: 12px 18px; }
+.folha-corpo > *:last-child { border-bottom: none; }
+
+.fb-data { font-size: 17px; font-weight: 700; }
+.fb-titulo { font-size: 16px; font-weight: 700; }
+.fb-linha { font-size: 15px; }
+.fb-linha b { font-weight: 700; }
+.fb-cadeiras { font-size: 16px; font-weight: 700; color: #b00; }
+
+/* ---------- impressão: só a folha sai no papel ---------- */
+@media print {
+  html, body { background: #fff !important; }
+  /* A folha é renderizada num portal no body; escondendo a app inteira, sobra
+     só ela — sem página em branco extra nem o fundo bege do sistema. */
+  .layout { display: none !important; }
+  .impressao-overlay { position: static; background: none; padding: 0; overflow: visible; }
+  .impressao-caixa { max-width: none; }
+  .nao-imprimir { display: none !important; }
+  .folha { border: none; }
+  /* Garante que os fundos coloridos do cabeçalho saiam na impressão. */
+  .folha-cabecalho, .fc-dupla span, .fb-cadeiras { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+@media (max-width: 640px) {
+  .folha-cabecalho { flex-wrap: wrap; gap: 12px; }
+  .fc-dupla { margin-left: 0; }
+}
+
+/* ---------- modal de edição (reunião / coordenador) ---------- */
+.editar-caixa {
+  width: 100%;
+  max-width: 760px;
+  background: var(--papel);
+  border-radius: var(--raio);
+  border: 1px solid var(--linha);
+  padding: 22px 24px;
+  box-shadow: 0 12px 40px rgba(15, 59, 37, 0.18);
+}
+.editar-caixa h2 { margin: 0 0 14px; }
+
+.reuniao-botoes { display: flex; gap: 6px; align-items: center; }
+.botao.icone { padding: 6px 9px; font-size: 15px; line-height: 1; }
+
+/* ---------- campos novos do formulário de reunião ---------- */
+.dupla-responsavel { display: flex; align-items: center; gap: 8px; }
+.dupla-responsavel .fixo {
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--dourado-claro);
+  border: 1px solid var(--dourado-linha);
+  border-radius: var(--raio-pequeno);
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+.dupla-responsavel .mais { color: var(--cinza); font-size: 13px; }
+.dupla-responsavel select { flex: 1 1 auto; }
+
+.campo-hora { display: flex; gap: 6px; }
+.campo-hora select { flex: 1 1 auto; }
+
+.campo-estreito { flex: 0 1 120px; }
+.campo-som { flex: 0 1 150px; }
+.check-som { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 400; padding: 8px 0; }
+.check-som input { width: 16px; height: 16px; accent-color: var(--verde); }

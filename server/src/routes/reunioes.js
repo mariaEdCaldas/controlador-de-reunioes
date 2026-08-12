@@ -5,12 +5,15 @@ export const reunioesRouter = Router();
 
 const SELECT_BASE = `
   SELECT r.id, r.local, r.endereco, r.data, r.hora, r.status,
+         r.nome, r.candidato, r.qtd_cadeiras, r.tem_som,
          r.regiao_id, reg.nome AS regiao,
+         r.coordenador_id, c.nome AS coordenador_nome, c.telefone AS coordenador_telefone,
          r.titular_id, t.nome AS titular_nome, t.telefone AS titular_telefone,
          r.reserva_id, s.nome AS reserva_nome, s.telefone AS reserva_telefone,
          r.checklist_som, r.checklist_cadeiras, r.presentes
     FROM reunioes r
     JOIN regioes reg     ON reg.id = r.regiao_id
+    LEFT JOIN coordenadores c ON c.id = r.coordenador_id
     LEFT JOIN palestrantes t ON t.id = r.titular_id
     LEFT JOIN palestrantes s ON s.id = r.reserva_id
 `;
@@ -20,8 +23,11 @@ const buscar = (id) => db.prepare(`${SELECT_BASE} WHERE r.id = ?`).get(id);
 function validarNova(corpo) {
   const erros = {};
 
+  const nome = String(corpo.nome ?? '').trim();
+  if (!nome) erros.nome = 'Informe o nome da reunião.';
+
+  // "Local" saiu do formulário — fica opcional (só o endereço importa agora).
   const local = String(corpo.local ?? '').trim();
-  if (!local) erros.local = 'Local é obrigatório.';
 
   const endereco = String(corpo.endereco ?? '').trim();
   if (!endereco) erros.endereco = 'Endereço é obrigatório.';
@@ -40,8 +46,33 @@ function validarNova(corpo) {
   const hora = String(corpo.hora ?? '').trim();
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) erros.hora = 'Informe a hora.';
 
+  // Opcionais: candidato co-responsável, coordenador de contato, cadeiras, som.
+  const candidato = String(corpo.candidato ?? '').trim();
+
+  let coordenadorId = null;
+  if (corpo.coordenador_id !== null && corpo.coordenador_id !== undefined && corpo.coordenador_id !== '') {
+    coordenadorId = Number(corpo.coordenador_id);
+    if (!Number.isInteger(coordenadorId) || !db.prepare('SELECT 1 FROM coordenadores WHERE id = ?').get(coordenadorId)) {
+      erros.coordenador_id = 'Coordenador não encontrado.';
+    }
+  }
+
+  let qtdCadeiras = null;
+  if (corpo.qtd_cadeiras !== null && corpo.qtd_cadeiras !== undefined && corpo.qtd_cadeiras !== '') {
+    qtdCadeiras = Number(corpo.qtd_cadeiras);
+    if (!Number.isInteger(qtdCadeiras) || qtdCadeiras < 0) erros.qtd_cadeiras = 'Quantidade de cadeiras inválida.';
+  }
+
+  const temSom = corpo.tem_som ? 1 : 0;
+
   if (Object.keys(erros).length > 0) return { ok: false, erros };
-  return { ok: true, dados: { local, endereco, regiao_id: regiaoId, data, hora } };
+  return {
+    ok: true,
+    dados: {
+      nome, local, endereco, regiao_id: regiaoId, data, hora,
+      candidato, coordenador_id: coordenadorId, qtd_cadeiras: qtdCadeiras, tem_som: temSom,
+    },
+  };
 }
 
 /** POST /api/reunioes - nasce sempre como "a_confirmar" (RN-04). */
@@ -51,12 +82,48 @@ reunioesRouter.post('/', (req, res) => {
 
   const { lastInsertRowid } = db
     .prepare(
-      `INSERT INTO reunioes (local, endereco, regiao_id, data, hora, status)
-       VALUES (@local, @endereco, @regiao_id, @data, @hora, 'a_confirmar')`
+      `INSERT INTO reunioes (nome, local, endereco, regiao_id, data, hora, status,
+                             candidato, coordenador_id, qtd_cadeiras, tem_som)
+       VALUES (@nome, @local, @endereco, @regiao_id, @data, @hora, 'a_confirmar',
+               @candidato, @coordenador_id, @qtd_cadeiras, @tem_som)`
     )
     .run(v.dados);
 
   res.status(201).json(buscar(lastInsertRowid));
+});
+
+/**
+ * PATCH /api/reunioes/:id  - editar as informações da reunião (a "canetinha"
+ * da Agenda). Mexe só nos dados da agenda/folha; não altera titular, reserva,
+ * checklist nem presença (esses têm regras próprias).
+ */
+reunioesRouter.patch('/:id', (req, res) => {
+  const reuniao = buscar(req.params.id);
+  if (!reuniao) return res.status(404).json({ erro: 'Reunião não encontrada.' });
+
+  const v = validarNova(req.body);
+  if (!v.ok) return res.status(400).json({ erro: 'Dados inválidos.', campos: v.erros });
+
+  // `local` saiu do formulário; não entra no UPDATE (só os campos editáveis).
+  const { local, ...campos } = v.dados;
+  db.prepare(
+    `UPDATE reunioes
+        SET nome = @nome, endereco = @endereco, regiao_id = @regiao_id,
+            data = @data, hora = @hora, candidato = @candidato,
+            coordenador_id = @coordenador_id, qtd_cadeiras = @qtd_cadeiras, tem_som = @tem_som
+      WHERE id = @id`
+  ).run({ ...campos, id: reuniao.id });
+
+  res.json(buscar(reuniao.id));
+});
+
+/** DELETE /api/reunioes/:id - remove a reunião da agenda. */
+reunioesRouter.delete('/:id', (req, res) => {
+  const reuniao = buscar(req.params.id);
+  if (!reuniao) return res.status(404).json({ erro: 'Reunião não encontrada.' });
+
+  db.prepare('DELETE FROM reunioes WHERE id = ?').run(reuniao.id);
+  res.json({ ok: true });
 });
 
 /**
@@ -249,21 +316,13 @@ reunioesRouter.patch('/:id/checklist', (req, res) => {
 /**
  * PATCH /api/reunioes/:id/realizada  - body: { presentes: number }
  *
- * RN-10: depois da reunião, registra-se quantas pessoas foram (contagem na mão,
- * não automática) e a reunião entra no histórico de prestação de contas.
- *
- * Exige titular definido: o histórico responde "quem foi falar, onde, para
- * quantas pessoas" - sem titular, a linha não serve para prestar contas.
+ * Finaliza a reunião: registra quantas pessoas foram (contagem na mão) e ela
+ * entra no histórico. Não exige palestrante — a agenda usa coordenador, e um
+ * evento que aconteceu pode ser fechado mesmo sem palestrante alocado.
  */
 reunioesRouter.patch('/:id/realizada', (req, res) => {
   const reuniao = buscar(req.params.id);
   if (!reuniao) return res.status(404).json({ erro: 'Reunião não encontrada.' });
-
-  if (!reuniao.titular_id) {
-    return res.status(400).json({
-      erro: 'Defina o palestrante titular antes de marcar a reunião como realizada.',
-    });
-  }
 
   const presentes = Number(req.body.presentes);
   if (!Number.isInteger(presentes) || presentes < 0) {
