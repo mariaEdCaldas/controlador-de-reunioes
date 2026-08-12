@@ -68,6 +68,12 @@ export const listarReunioes = ({ status } = {}) =>
 export const criarReuniao = (dados) =>
   pedir('/api/reunioes', { method: 'POST', body: JSON.stringify(dados) });
 
+export const editarReuniao = (id, dados) =>
+  pedir(`/api/reunioes/${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+
+export const excluirReuniao = (id) =>
+  pedir(`/api/reunioes/${id}`, { method: 'DELETE' });
+
 export const buscarSugestoes = (id) => pedir(`/api/reunioes/${id}/sugestoes`);
 
 export const definirTitular = (id, palestranteId) =>

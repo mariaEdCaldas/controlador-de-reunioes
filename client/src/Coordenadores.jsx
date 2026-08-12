@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   listarCoordenadores,
   listarTimes,
   criarCoordenador,
+  editarCoordenador,
   vincularCoordenador,
   excluirCoordenador,
   importarPreviaPlanilha,
   importarConfirmarPlanilha,
 } from './api.js';
 import { formatarTelefone } from './regioes.js';
+import Busca, { contemBusca } from './Busca.jsx';
 import './times.css';
 
 /** Link do WhatsApp com uma saudação genérica (sem contexto de reunião). */
@@ -25,9 +28,14 @@ export default function Coordenadores() {
   const [coordenadores, setCoordenadores] = useState([]);
   const [times, setTimes] = useState([]);
   const [filtro, setFiltro] = useState(''); // '' todos | id | 'sem'
-  const [form, setForm] = useState({ nome: '', telefone: '', time_id: '' });
+  const [form, setForm] = useState({
+    nome: '', telefone: '', bairro: '', endereco: '', rede_social: '', time_id: '',
+  });
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(true);
+  const [editando, setEditando] = useState(null); // coordenador em edição
+  const [mostrarForm, setMostrarForm] = useState(false);
+  const [busca, setBusca] = useState('');
   // Importação de planilha: prévia (o que seria importado, sem gravar).
   const [previa, setPrevia] = useState(null);
   const [importando, setImportando] = useState(false);
@@ -62,9 +70,13 @@ export default function Coordenadores() {
       await criarCoordenador({
         nome: form.nome,
         telefone: form.telefone,
+        bairro: form.bairro,
+        endereco: form.endereco,
+        rede_social: form.rede_social,
         time_id: form.time_id || null,
       });
-      setForm({ nome: '', telefone: '', time_id: '' });
+      setForm({ nome: '', telefone: '', bairro: '', endereco: '', rede_social: '', time_id: '' });
+      setMostrarForm(false);
       await carregar();
     } catch (err) {
       setErro(err.message);
@@ -126,6 +138,10 @@ export default function Coordenadores() {
     }
   }
 
+  const visiveis = coordenadores.filter((c) =>
+    contemBusca(`${c.nome} ${c.bairro ?? ''} ${c.rede_social ?? ''} ${c.telefone ?? ''}`, busca)
+  );
+
   return (
     <section>
       <header className="cabecalho-secao">
@@ -136,7 +152,7 @@ export default function Coordenadores() {
             {filtro === 'sem' ? ' sem time' : filtro ? ' neste time' : ''}
           </p>
         </div>
-        <div>
+        <div className="cabecalho-acoes">
           <input
             ref={inputArquivo}
             type="file"
@@ -151,6 +167,11 @@ export default function Coordenadores() {
           >
             {importando && !previa ? 'Lendo planilha…' : '📄 Importar planilha'}
           </button>
+          {!mostrarForm && (
+            <button className="botao primario" onClick={() => setMostrarForm(true)}>
+              + Novo coordenador
+            </button>
+          )}
         </div>
       </header>
 
@@ -207,6 +228,7 @@ export default function Coordenadores() {
         </div>
       )}
 
+      {mostrarForm && (
       <form className="cartao form" onSubmit={adicionar}>
         <div className="linha">
           <label className="campo">
@@ -214,6 +236,7 @@ export default function Coordenadores() {
             <input
               value={form.nome}
               onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+              autoFocus
             />
           </label>
           <label className="campo">
@@ -223,6 +246,32 @@ export default function Coordenadores() {
               onChange={(e) => setForm((f) => ({ ...f, telefone: e.target.value }))}
               placeholder="(67) 99999-8888"
               inputMode="tel"
+            />
+          </label>
+          <label className="campo">
+            <span>Bairro / região</span>
+            <input
+              value={form.bairro}
+              onChange={(e) => setForm((f) => ({ ...f, bairro: e.target.value }))}
+              placeholder="Ex.: Tarumã"
+            />
+          </label>
+        </div>
+        <div className="linha">
+          <label className="campo">
+            <span>Endereço</span>
+            <input
+              value={form.endereco}
+              onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
+              placeholder="Rua, número"
+            />
+          </label>
+          <label className="campo">
+            <span>Rede social</span>
+            <input
+              value={form.rede_social}
+              onChange={(e) => setForm((f) => ({ ...f, rede_social: e.target.value }))}
+              placeholder="@perfil ou e-mail"
             />
           </label>
           <label className="campo">
@@ -240,8 +289,12 @@ export default function Coordenadores() {
         </div>
         <div className="acoes-form">
           <button type="submit" className="botao primario">Cadastrar coordenador</button>
+          <button type="button" className="botao" onClick={() => setMostrarForm(false)}>Cancelar</button>
         </div>
       </form>
+      )}
+
+      <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar por nome, bairro ou rede…" />
 
       <div className="filtro">
         <label>
@@ -260,16 +313,22 @@ export default function Coordenadores() {
 
       {carregando ? (
         <p className="vazio">Carregando…</p>
-      ) : coordenadores.length === 0 ? (
-        <p className="vazio">Nenhum coordenador nesta seleção.</p>
+      ) : visiveis.length === 0 ? (
+        <p className="vazio">
+          {busca ? 'Nenhum coordenador encontrado.' : 'Nenhum coordenador nesta seleção.'}
+        </p>
       ) : (
-        <ul className="lista">
-          {coordenadores.map((c) => (
+        <ul className="lista lista-cartoes">
+          {visiveis.map((c) => (
             <li key={c.id} className="cartao item coord-item">
               <div className="item-principal">
                 <div className="item-nome">{c.nome}</div>
                 <div className="item-telefone">
                   {c.telefone ? formatarTelefone(c.telefone) : <em>sem telefone</em>}
+                </div>
+                <div className="coord-extra">
+                  {c.bairro && <span>{c.bairro}</span>}
+                  {c.rede_social && <span className="coord-rede">{c.rede_social}</span>}
                 </div>
               </div>
 
@@ -299,12 +358,93 @@ export default function Coordenadores() {
                     </a>
                   </>
                 )}
+                <button className="botao pequeno" onClick={() => setEditando(c)}>Editar</button>
                 <button className="botao pequeno" onClick={() => excluir(c)}>Excluir</button>
               </div>
             </li>
           ))}
         </ul>
       )}
+
+      {editando && (
+        <EdicaoCoordenador
+          coordenador={editando}
+          aoFechar={() => setEditando(null)}
+          aoSalvar={async () => {
+            setEditando(null);
+            await carregar();
+          }}
+          aoErro={setErro}
+        />
+      )}
     </section>
+  );
+}
+
+/** Modal de edição de um coordenador (nome, telefone, bairro, endereço, rede). */
+function EdicaoCoordenador({ coordenador, aoFechar, aoSalvar, aoErro }) {
+  const [f, setF] = useState({
+    nome: coordenador.nome ?? '',
+    telefone: coordenador.telefone ?? '',
+    bairro: coordenador.bairro ?? '',
+    endereco: coordenador.endereco ?? '',
+    rede_social: coordenador.rede_social ?? '',
+  });
+  const [salvando, setSalvando] = useState(false);
+  const set = (campo) => (e) => setF((x) => ({ ...x, [campo]: e.target.value }));
+
+  async function salvar(e) {
+    e.preventDefault();
+    if (!f.nome.trim()) return aoErro('Nome é obrigatório.');
+    setSalvando(true);
+    try {
+      await editarCoordenador(coordenador.id, f);
+      await aoSalvar();
+    } catch (err) {
+      aoErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return createPortal(
+    <div className="impressao-overlay" onClick={aoFechar}>
+      <div className="editar-caixa" onClick={(e) => e.stopPropagation()}>
+        <h2>Editar coordenador</h2>
+        <form onSubmit={salvar}>
+          <div className="linha">
+            <label className="campo">
+              <span>Nome <b aria-hidden="true">*</b></span>
+              <input value={f.nome} onChange={set('nome')} />
+            </label>
+            <label className="campo">
+              <span>Telefone (WhatsApp)</span>
+              <input value={f.telefone} onChange={set('telefone')} inputMode="tel" />
+            </label>
+          </div>
+          <div className="linha">
+            <label className="campo">
+              <span>Bairro / região</span>
+              <input value={f.bairro} onChange={set('bairro')} />
+            </label>
+            <label className="campo">
+              <span>Endereço</span>
+              <input value={f.endereco} onChange={set('endereco')} />
+            </label>
+            <label className="campo">
+              <span>Rede social</span>
+              <input value={f.rede_social} onChange={set('rede_social')} />
+            </label>
+          </div>
+          <div className="acoes-form">
+            <button type="submit" className="botao primario" disabled={salvando}>
+              {salvando ? 'Salvando…' : 'Salvar alterações'}
+            </button>
+            <button type="button" className="botao" onClick={aoFechar} disabled={salvando}>Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body
   );
 }

@@ -6,14 +6,15 @@ import { lerPlanilha, norm } from '../importar-coordenadores.js';
 export const coordenadoresRouter = Router();
 
 const SELECT_BASE = `
-  SELECT c.id, c.nome, c.telefone, c.time_id, t.nome AS time_nome
+  SELECT c.id, c.nome, c.telefone, c.bairro, c.endereco, c.rede_social,
+         c.time_id, t.nome AS time_nome
     FROM coordenadores c
     LEFT JOIN times t ON t.id = c.time_id
 `;
 
 const buscar = (id) => db.prepare(`${SELECT_BASE} WHERE c.id = ?`).get(id);
 
-/** Valida nome (obrigatório) e telefone (opcional; normalizado se vier). */
+/** Valida nome (obrigatório) e telefone (opcional); bairro/endereço/rede livres. */
 function validar(corpo, { exigeNome = true } = {}) {
   const nome = String(corpo.nome ?? '').trim();
   if (exigeNome && !nome) return { ok: false, erro: 'Nome é obrigatório.' };
@@ -25,7 +26,14 @@ function validar(corpo, { exigeNome = true } = {}) {
     if (!tel.ok) return { ok: false, erro: tel.erro };
     telefone = tel.telefone;
   }
-  return { ok: true, nome, telefone };
+  return {
+    ok: true,
+    nome,
+    telefone,
+    bairro: String(corpo.bairro ?? '').trim() || null,
+    endereco: String(corpo.endereco ?? '').trim() || null,
+    rede_social: String(corpo.rede_social ?? '').trim() || null,
+  };
 }
 
 /** Confere que o time existe, se um time_id foi informado. */
@@ -68,13 +76,16 @@ coordenadoresRouter.post('/', (req, res) => {
   if (!t.ok) return res.status(400).json({ erro: t.erro });
 
   const { lastInsertRowid } = db
-    .prepare('INSERT INTO coordenadores (nome, telefone, time_id) VALUES (?, ?, ?)')
-    .run(v.nome, v.telefone, t.timeId);
+    .prepare(
+      `INSERT INTO coordenadores (nome, telefone, bairro, endereco, rede_social, time_id)
+       VALUES (@nome, @telefone, @bairro, @endereco, @rede_social, @time_id)`
+    )
+    .run({ ...v, time_id: t.timeId });
 
   res.status(201).json(buscar(lastInsertRowid));
 });
 
-/** PATCH /api/coordenadores/:id  - editar nome/telefone. */
+/** PATCH /api/coordenadores/:id  - editar nome/telefone/bairro/endereço/rede. */
 coordenadoresRouter.patch('/:id', (req, res) => {
   const existe = buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Coordenador não encontrado.' });
@@ -82,8 +93,12 @@ coordenadoresRouter.patch('/:id', (req, res) => {
   const v = validar(req.body);
   if (!v.ok) return res.status(400).json({ erro: v.erro });
 
-  db.prepare('UPDATE coordenadores SET nome = ?, telefone = ? WHERE id = ?')
-    .run(v.nome, v.telefone, existe.id);
+  db.prepare(
+    `UPDATE coordenadores
+        SET nome = @nome, telefone = @telefone, bairro = @bairro,
+            endereco = @endereco, rede_social = @rede_social
+      WHERE id = @id`
+  ).run({ ...v, id: existe.id });
 
   res.json(buscar(existe.id));
 });
