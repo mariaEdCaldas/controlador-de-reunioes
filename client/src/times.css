@@ -90,6 +90,39 @@
   vertical-align: middle;
 }
 
+/* ---------- cabos (Time -> Coordenador -> Cabo) ---------- */
+.coord-grupo { padding: 0; overflow: hidden; }
+.coord-grupo-cabeca {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 18px; cursor: pointer; flex-wrap: wrap;
+}
+.coord-grupo-cabeca:hover { background: var(--bege); }
+.coord-grupo-ident { display: flex; align-items: center; gap: 10px; }
+.coord-grupo-nome { font-weight: 700; font-size: 15px; }
+.coord-grupo-dir { display: flex; align-items: center; gap: 12px; }
+.coord-grupo-contagem { font-size: 13px; color: var(--cinza); }
+
+.cabo-linha {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 12px; border: 1px solid var(--linha); border-radius: var(--raio-pequeno);
+  background: var(--papel); flex-wrap: wrap;
+}
+.cabo-info { min-width: 0; display: flex; flex-direction: column; }
+.cabo-detalhe { font-size: 12.5px; color: var(--cinza); }
+.cabo-acoes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cabo-relink select { font-size: 12.5px; padding: 5px 8px; max-width: 170px; }
+
+/* ---------- visão geral: cards de número ---------- */
+.cartoes-numero {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px; margin-bottom: 22px;
+}
+.numero-card { text-align: center; padding: 18px 16px; }
+.numero-card.destaque { border-color: var(--dourado-linha); background: var(--dourado-claro); }
+.numero-valor { font-family: var(--fonte-mono); font-size: 32px; font-weight: 700; color: var(--verde-escuro); line-height: 1; }
+.numero-card.destaque .numero-valor { color: #7a5c12; }
+.numero-rotulo { font-size: 12.5px; color: var(--cinza); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+
 /* ---------- importar planilha ---------- */
 .import-previa { border-left: 3px solid var(--dourado); margin-bottom: 24px; }
 .import-previa h2 { margin-bottom: 8px; }
