@@ -6,6 +6,11 @@
 
 import { getToken, deslogar } from './auth.js';
 
+// Em produção a tela (Vercel) e a API (Render) ficam em endereços diferentes:
+// VITE_API_URL aponta para o servidor. Em desenvolvimento fica vazio e o Vite
+// redireciona /api para o backend local (ver vite.config.js).
+const BASE_API = import.meta.env.VITE_API_URL || '';
+
 class ErroApi extends Error {
   constructor(mensagem, { campos } = {}) {
     super(mensagem);
@@ -21,7 +26,7 @@ async function pedir(url, opcoes = {}) {
 
   let resposta;
   try {
-    resposta = await fetch(url, { ...opcoes, headers });
+    resposta = await fetch(BASE_API + url, { ...opcoes, headers });
   } catch {
     throw new ErroApi('Sem conexão com o servidor. Ele está rodando?');
   }

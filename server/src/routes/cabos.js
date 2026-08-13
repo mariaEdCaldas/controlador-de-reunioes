@@ -39,10 +39,10 @@ function validar(corpo) {
   };
 }
 
-function validarCoordenador(coordId) {
+async function validarCoordenador(coordId) {
   if (coordId === null || coordId === undefined || coordId === '') return { ok: true, coordId: null };
   const id = Number(coordId);
-  if (!Number.isInteger(id) || !db.prepare('SELECT 1 FROM coordenadores WHERE id = ?').get(id)) {
+  if (!Number.isInteger(id) || !(await db.prepare('SELECT 1 FROM coordenadores WHERE id = ?').get(id))) {
     return { ok: false, erro: 'Coordenador não encontrado.' };
   }
   return { ok: true, coordId: id };
@@ -52,7 +52,7 @@ function validarCoordenador(coordId) {
  * GET /api/cabos
  * Filtros: ?coordenador_id=  |  ?time_id=  |  ?sem_coordenador=1
  */
-cabosRouter.get('/', (req, res) => {
+cabosRouter.get('/', async (req, res) => {
   const cond = [];
   const params = {};
   if (req.query.sem_coordenador === '1') {
@@ -65,57 +65,58 @@ cabosRouter.get('/', (req, res) => {
     params.time_id = Number(req.query.time_id);
   }
   const where = cond.length ? `WHERE ${cond.join(' AND ')}` : '';
-  res.json(db.prepare(`${SELECT_BASE} ${where} ORDER BY k.nome COLLATE NOCASE`).all(params));
+  res.json(await db.prepare(`${SELECT_BASE} ${where} ORDER BY k.nome COLLATE NOCASE`).all(params));
 });
 
 /** POST /api/cabos */
-cabosRouter.post('/', (req, res) => {
+cabosRouter.post('/', async (req, res) => {
   const v = validar(req.body);
   if (!v.ok) return res.status(400).json({ erro: v.erro });
-  const c = validarCoordenador(req.body.coordenador_id);
+  const c = await validarCoordenador(req.body.coordenador_id);
   if (!c.ok) return res.status(400).json({ erro: c.erro });
 
   const { ok, ...campos } = v;
-  const { lastInsertRowid } = db
+  const { lastInsertRowid } = await db
     .prepare(
       `INSERT INTO cabos (nome, telefone, bairro, endereco, rede_social, coordenador_id)
        VALUES (@nome, @telefone, @bairro, @endereco, @rede_social, @coordenador_id)`
     )
     .run({ ...campos, coordenador_id: c.coordId });
 
-  res.status(201).json(buscar(lastInsertRowid));
+  res.status(201).json(await buscar(lastInsertRowid));
 });
 
 /** PATCH /api/cabos/:id — edita nome/telefone/bairro/endereço/rede. */
-cabosRouter.patch('/:id', (req, res) => {
-  const existe = buscar(req.params.id);
+cabosRouter.patch('/:id', async (req, res) => {
+  const existe = await buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Cabo não encontrado.' });
   const v = validar(req.body);
   if (!v.ok) return res.status(400).json({ erro: v.erro });
 
-  db.prepare(
+  const { ok, ...campos } = v;
+  await db.prepare(
     `UPDATE cabos SET nome=@nome, telefone=@telefone, bairro=@bairro,
                       endereco=@endereco, rede_social=@rede_social WHERE id=@id`
-  ).run({ ...v, id: existe.id });
-  res.json(buscar(existe.id));
+  ).run({ ...campos, id: existe.id });
+  res.json(await buscar(existe.id));
 });
 
 /** PATCH /api/cabos/:id/coordenador — body: { coordenador_id } (null desvincula) */
-cabosRouter.patch('/:id/coordenador', (req, res) => {
-  const existe = buscar(req.params.id);
+cabosRouter.patch('/:id/coordenador', async (req, res) => {
+  const existe = await buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Cabo não encontrado.' });
-  const c = validarCoordenador(req.body.coordenador_id);
+  const c = await validarCoordenador(req.body.coordenador_id);
   if (!c.ok) return res.status(400).json({ erro: c.erro });
 
-  db.prepare('UPDATE cabos SET coordenador_id = ? WHERE id = ?').run(c.coordId, existe.id);
-  res.json(buscar(existe.id));
+  await db.prepare('UPDATE cabos SET coordenador_id = ? WHERE id = ?').run(c.coordId, existe.id);
+  res.json(await buscar(existe.id));
 });
 
 /** DELETE /api/cabos/:id */
-cabosRouter.delete('/:id', (req, res) => {
-  const existe = buscar(req.params.id);
+cabosRouter.delete('/:id', async (req, res) => {
+  const existe = await buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Cabo não encontrado.' });
-  db.prepare('DELETE FROM cabos WHERE id = ?').run(existe.id);
+  await db.prepare('DELETE FROM cabos WHERE id = ?').run(existe.id);
   res.json({ ok: true });
 });
 
@@ -137,10 +138,10 @@ cabosRouter.post(
     if (!r.ok) return res.status(400).json({ erro: r.erro });
 
     const existentes = new Set(
-      db.prepare('SELECT nome, telefone FROM cabos').all().map((k) => chaveCabo(k.nome, k.telefone))
+      (await db.prepare('SELECT nome, telefone FROM cabos').all()).map((k) => chaveCabo(k.nome, k.telefone))
     );
     const coordPorNome = new Map(
-      db.prepare('SELECT id, nome FROM coordenadores').all().map((c) => [norm(c.nome), c.id])
+      (await db.prepare('SELECT id, nome FROM coordenadores').all()).map((c) => [norm(c.nome), c.id])
     );
 
     let novos = 0;
@@ -170,18 +171,18 @@ cabosRouter.post(
   }
 );
 
-cabosRouter.post('/importar/confirmar', (req, res) => {
+cabosRouter.post('/importar/confirmar', async (req, res) => {
   const linhas = Array.isArray(req.body?.linhas) ? req.body.linhas : null;
   if (!linhas) return res.status(400).json({ erro: 'Nada para importar.' });
 
-  const gravar = db.transaction(() => {
+  const resultado = await db.transacao(async (tx) => {
     const existentes = new Set(
-      db.prepare('SELECT nome, telefone FROM cabos').all().map((k) => chaveCabo(k.nome, k.telefone))
+      (await tx.prepare('SELECT nome, telefone FROM cabos').all()).map((k) => chaveCabo(k.nome, k.telefone))
     );
     const coordPorNome = new Map(
-      db.prepare('SELECT id, nome FROM coordenadores').all().map((c) => [norm(c.nome), c.id])
+      (await tx.prepare('SELECT id, nome FROM coordenadores').all()).map((c) => [norm(c.nome), c.id])
     );
-    const inserir = db.prepare(
+    const inserir = tx.prepare(
       `INSERT INTO cabos (nome, telefone, bairro, endereco, rede_social, coordenador_id)
        VALUES (?, ?, ?, ?, ?, ?)`
     );
@@ -197,12 +198,12 @@ cabosRouter.post('/importar/confirmar', (req, res) => {
         continue;
       }
       const coordId = l?.coordenador ? coordPorNome.get(norm(l.coordenador)) ?? null : null;
-      inserir.run(nome, telefone, l?.bairro || null, l?.endereco || null, l?.rede_social || null, coordId);
+      await inserir.run(nome, telefone, l?.bairro || null, l?.endereco || null, l?.rede_social || null, coordId);
       existentes.add(chaveCabo(nome, telefone));
       cabos++;
     }
     return { cabos, pulados };
   });
 
-  res.json(gravar());
+  res.json(resultado);
 });

@@ -6,16 +6,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const migrationsDir = path.resolve(__dirname, 'migrations');
 
 /**
- * Aplica as migrations ainda nao rodadas, em ordem de numero.
+ * Aplica as migrations ainda não rodadas, em ordem de número.
  *
- * Cada arquivo em src/migrations/ segue o padrao "001_descricao.sql".
- * O numero ja aplicado fica registrado na tabela `migracoes`, entao rodar
- * duas vezes nao repete nada. Novos modulos = novo arquivo com numero maior.
+ * Cada arquivo em src/migrations/ segue o padrão "001_descricao.sql". O número
+ * já aplicado fica registrado na tabela `migracoes`, então rodar duas vezes não
+ * repete nada. Novos módulos = novo arquivo com número maior.
  *
- * @returns {number} numero da ultima migration aplicada (versao do schema)
+ * @returns {Promise<number>} número da última migration aplicada (versão do schema)
  */
-export function migrar(db, { silencioso = false } = {}) {
-  db.exec(`
+export async function migrar(db) {
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS migracoes (
       numero INTEGER PRIMARY KEY,
       nome TEXT NOT NULL,
@@ -24,7 +24,7 @@ export function migrar(db, { silencioso = false } = {}) {
   `);
 
   const jaAplicadas = new Set(
-    db.prepare('SELECT numero FROM migracoes').all().map((m) => m.numero)
+    (await db.prepare('SELECT numero FROM migracoes').all()).map((m) => Number(m.numero))
   );
 
   const arquivos = fs
@@ -32,34 +32,21 @@ export function migrar(db, { silencioso = false } = {}) {
     .filter((f) => f.endsWith('.sql'))
     .sort();
 
-  const registrar = db.prepare(
-    'INSERT INTO migracoes (numero, nome) VALUES (?, ?)'
-  );
-
   for (const arquivo of arquivos) {
     const numero = Number.parseInt(arquivo.slice(0, 3), 10);
     if (Number.isNaN(numero)) {
-      throw new Error(
-        `Migration com nome invalido: "${arquivo}" (esperado: 001_descricao.sql)`
-      );
+      throw new Error(`Migration com nome inválido: "${arquivo}" (esperado: 001_descricao.sql)`);
     }
     if (jaAplicadas.has(numero)) continue;
 
     const sql = fs.readFileSync(path.join(migrationsDir, arquivo), 'utf8');
-
-    // Tudo dentro de uma transacao: se o SQL falhar no meio, nada e gravado
-    // e a migration nao e marcada como aplicada.
-    db.transaction(() => {
-      db.exec(sql);
-      registrar.run(numero, arquivo);
-    })();
-
-    if (!silencioso) console.log(`[db] migration aplicada: ${arquivo}`);
+    await db.exec(sql);
+    await db.prepare('INSERT INTO migracoes (numero, nome) VALUES (?, ?)').run(numero, arquivo);
+    console.log(`[db] migration aplicada: ${arquivo}`);
   }
 
-  const { versao } = db
+  const { versao } = await db
     .prepare('SELECT COALESCE(MAX(numero), 0) AS versao FROM migracoes')
     .get();
-
-  return versao;
+  return Number(versao);
 }

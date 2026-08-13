@@ -1,4 +1,5 @@
 import express from 'express';
+import 'express-async-errors'; // faz erros de handlers async caírem no tratador
 import cors from 'cors';
 import { db, dbFile, versaoSchema } from './db.js';
 import { palestrantesRouter } from './routes/palestrantes.js';
@@ -18,13 +19,19 @@ const PORT = process.env.PORT || 3001;
 
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+// Origens permitidas: em produção, o endereço da tela (Vercel), via CORS_ORIGIN
+// (aceita vários separados por vírgula). Local, o Vite em 5173.
+const origensPermitidas = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use(cors({ origin: origensPermitidas }));
 app.use(express.json());
 
 // Usado pelo frontend para confirmar que a API e o banco estao no ar.
-app.get('/api/health', (req, res) => {
-  const contar = (tabela) =>
-    db.prepare(`SELECT COUNT(*) AS n FROM ${tabela}`).get().n;
+app.get('/api/health', async (req, res) => {
+  const contar = async (tabela) =>
+    (await db.prepare(`SELECT COUNT(*) AS n FROM ${tabela}`).get()).n;
 
   res.json({
     status: 'ok',
@@ -32,11 +39,11 @@ app.get('/api/health', (req, res) => {
     banco: dbFile,
     versaoSchema,
     registros: {
-      regioes: contar('regioes'),
-      palestrantes: contar('palestrantes'),
-      reunioes: contar('reunioes'),
-      times: contar('times'),
-      coordenadores: contar('coordenadores'),
+      regioes: await contar('regioes'),
+      palestrantes: await contar('palestrantes'),
+      reunioes: await contar('reunioes'),
+      times: await contar('times'),
+      coordenadores: await contar('coordenadores'),
     },
     hora: new Date().toISOString(),
   });
@@ -65,7 +72,9 @@ app.use((req, res) => {
 // Rede de seguranca: as constraints do banco (telefone fora do formato, choque
 // de agenda, FK) virariam um erro cru de SQLite. Aqui viram 400 com mensagem.
 app.use((erro, req, res, next) => {
-  if (String(erro.code ?? '').startsWith('SQLITE_CONSTRAINT')) {
+  // Erros de constraint do SQLite/libsql (UNIQUE, FK, CHECK) viram 400 amigável.
+  const texto = `${erro.code ?? ''} ${erro.message ?? ''}`;
+  if (/SQLITE_CONSTRAINT|constraint failed|UNIQUE|FOREIGN KEY/i.test(texto)) {
     console.error('[server] constraint do banco:', erro.message);
     return res.status(400).json({ erro: 'Dados inválidos.', detalhe: erro.message });
   }

@@ -25,9 +25,9 @@ lembretesRouter.get('/previa', async (req, res) => {
     duracaoHoras: config.duracaoHoras,
     whatsapp: config.whatsapp,
     dataAlvo: dataDeAmanha(),
-    reunioes: reunioesDeAmanha(),
+    reunioes: await reunioesDeAmanha(),
     previa: vespera.resultados,
-    fechamentoReunioes: reunioesParaFechar(),
+    fechamentoReunioes: await reunioesParaFechar(),
     fechamentoPrevia: fechamento.resultados,
   });
 });

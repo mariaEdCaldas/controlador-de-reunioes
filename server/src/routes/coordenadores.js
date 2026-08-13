@@ -37,10 +37,10 @@ function validar(corpo, { exigeNome = true } = {}) {
 }
 
 /** Confere que o time existe, se um time_id foi informado. */
-function validarTime(timeId) {
+async function validarTime(timeId) {
   if (timeId === null || timeId === undefined || timeId === '') return { ok: true, timeId: null };
   const id = Number(timeId);
-  if (!Number.isInteger(id) || !db.prepare('SELECT 1 FROM times WHERE id = ?').get(id)) {
+  if (!Number.isInteger(id) || !(await db.prepare('SELECT 1 FROM times WHERE id = ?').get(id))) {
     return { ok: false, erro: 'Time não encontrado.' };
   }
   return { ok: true, timeId: id };
@@ -50,7 +50,7 @@ function validarTime(timeId) {
  * GET /api/coordenadores
  * Filtros: ?time_id=3  |  ?sem_time=1 (só os ainda não vinculados)
  */
-coordenadoresRouter.get('/', (req, res) => {
+coordenadoresRouter.get('/', async (req, res) => {
   const condicoes = [];
   const params = {};
 
@@ -62,68 +62,67 @@ coordenadoresRouter.get('/', (req, res) => {
   }
 
   const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '';
-  res.json(
-    db.prepare(`${SELECT_BASE} ${where} ORDER BY c.nome COLLATE NOCASE`).all(params)
-  );
+  res.json(await db.prepare(`${SELECT_BASE} ${where} ORDER BY c.nome COLLATE NOCASE`).all(params));
 });
 
 /** POST /api/coordenadores */
-coordenadoresRouter.post('/', (req, res) => {
+coordenadoresRouter.post('/', async (req, res) => {
   const v = validar(req.body);
   if (!v.ok) return res.status(400).json({ erro: v.erro });
 
-  const t = validarTime(req.body.time_id);
+  const t = await validarTime(req.body.time_id);
   if (!t.ok) return res.status(400).json({ erro: t.erro });
 
-  const { lastInsertRowid } = db
+  const { ok, ...campos } = v;
+  const { lastInsertRowid } = await db
     .prepare(
       `INSERT INTO coordenadores (nome, telefone, bairro, endereco, rede_social, time_id)
        VALUES (@nome, @telefone, @bairro, @endereco, @rede_social, @time_id)`
     )
-    .run({ ...v, time_id: t.timeId });
+    .run({ ...campos, time_id: t.timeId });
 
-  res.status(201).json(buscar(lastInsertRowid));
+  res.status(201).json(await buscar(lastInsertRowid));
 });
 
 /** PATCH /api/coordenadores/:id  - editar nome/telefone/bairro/endereço/rede. */
-coordenadoresRouter.patch('/:id', (req, res) => {
-  const existe = buscar(req.params.id);
+coordenadoresRouter.patch('/:id', async (req, res) => {
+  const existe = await buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Coordenador não encontrado.' });
 
   const v = validar(req.body);
   if (!v.ok) return res.status(400).json({ erro: v.erro });
 
-  db.prepare(
+  const { ok, ...campos } = v;
+  await db.prepare(
     `UPDATE coordenadores
         SET nome = @nome, telefone = @telefone, bairro = @bairro,
             endereco = @endereco, rede_social = @rede_social
       WHERE id = @id`
-  ).run({ ...v, id: existe.id });
+  ).run({ ...campos, id: existe.id });
 
-  res.json(buscar(existe.id));
+  res.json(await buscar(existe.id));
 });
 
 /**
  * PATCH /api/coordenadores/:id/time  - body: { time_id }  (null desvincula)
- * É o vínculo coordenador ↔ time.
  */
-coordenadoresRouter.patch('/:id/time', (req, res) => {
-  const existe = buscar(req.params.id);
+coordenadoresRouter.patch('/:id/time', async (req, res) => {
+  const existe = await buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Coordenador não encontrado.' });
 
-  const t = validarTime(req.body.time_id);
+  const t = await validarTime(req.body.time_id);
   if (!t.ok) return res.status(400).json({ erro: t.erro });
 
-  db.prepare('UPDATE coordenadores SET time_id = ? WHERE id = ?').run(t.timeId, existe.id);
-  res.json(buscar(existe.id));
+  await db.prepare('UPDATE coordenadores SET time_id = ? WHERE id = ?').run(t.timeId, existe.id);
+  res.json(await buscar(existe.id));
 });
 
 /** DELETE /api/coordenadores/:id */
-coordenadoresRouter.delete('/:id', (req, res) => {
-  const existe = buscar(req.params.id);
+coordenadoresRouter.delete('/:id', async (req, res) => {
+  const existe = await buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Coordenador não encontrado.' });
 
-  db.prepare('DELETE FROM coordenadores WHERE id = ?').run(existe.id);
+  await db.prepare('DELETE FROM coordenadores WHERE id = ?').run(existe.id);
   res.json({ ok: true });
 });
 
@@ -131,11 +130,6 @@ coordenadoresRouter.delete('/:id', (req, res) => {
 // Importar planilha (.xlsx/.csv): prévia (não grava) e confirmação (grava).
 // ---------------------------------------------------------------------------
 
-/**
- * POST /api/coordenadores/importar/previa   (corpo: o arquivo cru)
- * Lê a planilha e devolve o que SERIA importado, sem gravar nada:
- * quantos coordenadores novos, quantos já existem e quais times seriam criados.
- */
 coordenadoresRouter.post(
   '/importar/previa',
   express.raw({ type: () => true, limit: '15mb' }),
@@ -147,10 +141,10 @@ coordenadoresRouter.post(
     if (!r.ok) return res.status(400).json({ erro: r.erro });
 
     const nomesExistentes = new Set(
-      db.prepare('SELECT nome FROM coordenadores').all().map((c) => norm(c.nome))
+      (await db.prepare('SELECT nome FROM coordenadores').all()).map((c) => norm(c.nome))
     );
     const timesExistentes = new Set(
-      db.prepare('SELECT nome FROM times').all().map((t) => norm(t.nome))
+      (await db.prepare('SELECT nome FROM times').all()).map((t) => norm(t.nome))
     );
 
     const timesNaPlanilha = new Set();
@@ -172,26 +166,19 @@ coordenadoresRouter.post(
   }
 );
 
-/**
- * POST /api/coordenadores/importar/confirmar   (corpo JSON: { linhas })
- * Grava de verdade: cria os times que faltam e insere os coordenadores novos.
- * Coordenador cujo nome já existe é PULADO (não sobrescreve).
- */
-coordenadoresRouter.post('/importar/confirmar', (req, res) => {
+coordenadoresRouter.post('/importar/confirmar', async (req, res) => {
   const linhas = Array.isArray(req.body?.linhas) ? req.body.linhas : null;
   if (!linhas) return res.status(400).json({ erro: 'Nada para importar.' });
 
-  const gravar = db.transaction(() => {
+  const resultado = await db.transacao(async (tx) => {
     const nomesExistentes = new Set(
-      db.prepare('SELECT nome FROM coordenadores').all().map((c) => norm(c.nome))
+      (await tx.prepare('SELECT nome FROM coordenadores').all()).map((c) => norm(c.nome))
     );
     const timeIdPorNome = new Map(
-      db.prepare('SELECT id, nome FROM times').all().map((t) => [norm(t.nome), t.id])
+      (await tx.prepare('SELECT id, nome FROM times').all()).map((t) => [norm(t.nome), t.id])
     );
-    const inserirTime = db.prepare('INSERT INTO times (nome) VALUES (?)');
-    const inserirCoord = db.prepare(
-      'INSERT INTO coordenadores (nome, telefone, time_id) VALUES (?, ?, ?)'
-    );
+    const inserirTime = tx.prepare('INSERT INTO times (nome) VALUES (?)');
+    const inserirCoord = tx.prepare('INSERT INTO coordenadores (nome, telefone, time_id) VALUES (?, ?, ?)');
 
     let coordenadores = 0;
     let times = 0;
@@ -210,7 +197,7 @@ coordenadoresRouter.post('/importar/confirmar', (req, res) => {
       if (timeNome) {
         const chave = norm(timeNome);
         if (!timeIdPorNome.has(chave)) {
-          const { lastInsertRowid } = inserirTime.run(timeNome);
+          const { lastInsertRowid } = await inserirTime.run(timeNome);
           timeIdPorNome.set(chave, lastInsertRowid);
           times++;
         }
@@ -218,7 +205,7 @@ coordenadoresRouter.post('/importar/confirmar', (req, res) => {
       }
 
       const telefone = l?.telefone ? String(l.telefone) : null;
-      inserirCoord.run(nome, telefone, timeId);
+      await inserirCoord.run(nome, telefone, timeId);
       nomesExistentes.add(norm(nome));
       coordenadores++;
     }
@@ -226,5 +213,5 @@ coordenadoresRouter.post('/importar/confirmar', (req, res) => {
     return { coordenadores, times, pulados };
   });
 
-  res.json(gravar());
+  res.json(resultado);
 });

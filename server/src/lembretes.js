@@ -24,7 +24,7 @@ export function dataDeAmanha(base = new Date()) {
  * Reuniões marcadas para amanhã que ainda não aconteceram.
  * Reunião já "realizada" não gera lembrete.
  */
-export function reunioesDeAmanha(base = new Date()) {
+export async function reunioesDeAmanha(base = new Date()) {
   return db
     .prepare(`${SELECT_REUNIAO} WHERE r.data = ? AND r.status <> 'realizada' ORDER BY r.hora`)
     .all(dataDeAmanha(base));
@@ -37,7 +37,7 @@ const registrarTipo = db.prepare(
   `INSERT OR IGNORE INTO lembretes_enviados (reuniao_id, tipo) VALUES (?, ?)`
 );
 
-const jaEnviado = (id) => Boolean(jaEnviadoTipo.get(id, 'vespera_email'));
+const jaEnviado = async (id) => Boolean(await jaEnviadoTipo.get(id, 'vespera_email'));
 const registrar = (id) => registrarTipo.run(id, 'vespera_email');
 
 /**
@@ -50,11 +50,11 @@ const registrar = (id) => registrarTipo.run(id, 'vespera_email');
  * @returns {{ configurado, data, resultados: Array }}
  */
 export async function enviarLembretesDeVespera({ base = new Date(), forcar = false, dryRun = false } = {}) {
-  const reunioes = reunioesDeAmanha(base);
+  const reunioes = await reunioesDeAmanha(base);
   const resultados = [];
 
   for (const r of reunioes) {
-    const enviado = jaEnviado(r.id);
+    const enviado = await jaEnviado(r.id);
     const lembrete = montarLembrete(r);
 
     if (enviado && !forcar) {
@@ -74,7 +74,7 @@ export async function enviarLembretesDeVespera({ base = new Date(), forcar = fal
 
     try {
       await enviarEmail(lembrete);
-      registrar(r.id);
+      await registrar(r.id);
       resultados.push({ reuniao: r.id, local: r.local, status: 'enviado', assunto: lembrete.assunto });
     } catch (erro) {
       resultados.push({ reuniao: r.id, local: r.local, status: 'erro', erro: erro.message });
@@ -102,8 +102,8 @@ export async function enviarLembretesDeVespera({ base = new Date(), forcar = fal
  * Só olha uma janela recente (de ontem para cá, no fuso de Campo Grande) para
  * não disparar de uma vez por reuniões antigas que ficaram sem fechar lá atrás.
  */
-export function reunioesParaFechar(base = new Date()) {
-  const candidatas = db
+export async function reunioesParaFechar(base = new Date()) {
+  const candidatas = await db
     .prepare(
       `${SELECT_REUNIAO}
         WHERE r.status <> 'realizada' AND r.data >= ? AND r.data <= ?
@@ -124,11 +124,11 @@ export function reunioesParaFechar(base = new Date()) {
  * Mesma mecânica da véspera (dedup por tipo 'fechamento_email', dryRun, forcar).
  */
 export async function enviarLembretesDeFechamento({ base = new Date(), forcar = false, dryRun = false } = {}) {
-  const reunioes = reunioesParaFechar(base);
+  const reunioes = await reunioesParaFechar(base);
   const resultados = [];
 
   for (const r of reunioes) {
-    const enviado = Boolean(jaEnviadoTipo.get(r.id, 'fechamento_email'));
+    const enviado = Boolean(await jaEnviadoTipo.get(r.id, 'fechamento_email'));
     const lembrete = montarLembreteFechamento(r, config.duracaoHoras);
 
     if (enviado && !forcar) {
@@ -145,7 +145,7 @@ export async function enviarLembretesDeFechamento({ base = new Date(), forcar = 
     }
     try {
       await enviarEmail(lembrete);
-      registrarTipo.run(r.id, 'fechamento_email');
+      await registrarTipo.run(r.id, 'fechamento_email');
       resultados.push({ reuniao: r.id, local: r.local, status: 'enviado', podeFechar: lembrete.podeFechar, assunto: lembrete.assunto });
     } catch (erro) {
       resultados.push({ reuniao: r.id, local: r.local, status: 'erro', erro: erro.message });

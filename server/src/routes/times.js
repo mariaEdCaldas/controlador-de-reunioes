@@ -22,16 +22,16 @@ function validarNome(corpo) {
 }
 
 /** GET /api/times */
-timesRouter.get('/', (req, res) => {
-  res.json(db.prepare(LISTA).all());
+timesRouter.get('/', async (req, res) => {
+  res.json(await db.prepare(LISTA).all());
 });
 
 /** GET /api/times/:id  - o time com seus coordenadores (para a tela de vínculo). */
-timesRouter.get('/:id', (req, res) => {
-  const time = umTime(req.params.id);
+timesRouter.get('/:id', async (req, res) => {
+  const time = await umTime(req.params.id);
   if (!time) return res.status(404).json({ erro: 'Time não encontrado.' });
 
-  const coordenadores = db
+  const coordenadores = await db
     .prepare(
       `SELECT id, nome, telefone, time_id
          FROM coordenadores
@@ -44,32 +44,32 @@ timesRouter.get('/:id', (req, res) => {
 });
 
 /** POST /api/times  - cadastro tem só o nome. */
-timesRouter.post('/', (req, res) => {
+timesRouter.post('/', async (req, res) => {
   const v = validarNome(req.body);
   if (!v.ok) return res.status(400).json({ erro: v.erro });
 
-  const existe = db.prepare('SELECT 1 FROM times WHERE nome = ? COLLATE NOCASE').get(v.nome);
+  const existe = await db.prepare('SELECT 1 FROM times WHERE nome = ? COLLATE NOCASE').get(v.nome);
   if (existe) return res.status(400).json({ erro: `Já existe um time chamado "${v.nome}".` });
 
-  const { lastInsertRowid } = db.prepare('INSERT INTO times (nome) VALUES (?)').run(v.nome);
-  res.status(201).json(umTime(lastInsertRowid));
+  const { lastInsertRowid } = await db.prepare('INSERT INTO times (nome) VALUES (?)').run(v.nome);
+  res.status(201).json(await umTime(lastInsertRowid));
 });
 
 /** PATCH /api/times/:id  - renomear (os códigos importados são pouco claros). */
-timesRouter.patch('/:id', (req, res) => {
-  const time = umTime(req.params.id);
+timesRouter.patch('/:id', async (req, res) => {
+  const time = await umTime(req.params.id);
   if (!time) return res.status(404).json({ erro: 'Time não encontrado.' });
 
   const v = validarNome(req.body);
   if (!v.ok) return res.status(400).json({ erro: v.erro });
 
-  const conflito = db
+  const conflito = await db
     .prepare('SELECT 1 FROM times WHERE nome = ? COLLATE NOCASE AND id <> ?')
     .get(v.nome, time.id);
   if (conflito) return res.status(400).json({ erro: `Já existe um time chamado "${v.nome}".` });
 
-  db.prepare('UPDATE times SET nome = ? WHERE id = ?').run(v.nome, time.id);
-  res.json(umTime(time.id));
+  await db.prepare('UPDATE times SET nome = ? WHERE id = ?').run(v.nome, time.id);
+  res.json(await umTime(time.id));
 });
 
 /**
@@ -77,10 +77,10 @@ timesRouter.patch('/:id', (req, res) => {
  * O time some, mas os coordenadores ficam (só perdem o vínculo — ON DELETE SET
  * NULL na migration). Ninguém é apagado por tabela.
  */
-timesRouter.delete('/:id', (req, res) => {
-  const time = umTime(req.params.id);
+timesRouter.delete('/:id', async (req, res) => {
+  const time = await umTime(req.params.id);
   if (!time) return res.status(404).json({ erro: 'Time não encontrado.' });
 
-  db.prepare('DELETE FROM times WHERE id = ?').run(time.id);
+  await db.prepare('DELETE FROM times WHERE id = ?').run(time.id);
   res.json({ ok: true, coordenadoresSoltos: time.coordenadores });
 });

@@ -18,12 +18,12 @@ const buscar = (id) => db.prepare(`${SELECT_BASE} WHERE p.id = ?`).get(id);
 const STATUS = new Set(['pendente', 'aprovada', 'recusada']);
 
 /** Valida a proposta: só proponente e bairro/região são obrigatórios. */
-function validar(corpo) {
+async function validar(corpo) {
   const proponente = String(corpo.proponente ?? '').trim();
   if (!proponente) return { ok: false, erro: 'Informe quem está propondo.' };
 
   const regiaoId = Number(corpo.regiao_id);
-  if (!Number.isInteger(regiaoId) || !db.prepare('SELECT 1 FROM regioes WHERE id = ?').get(regiaoId)) {
+  if (!Number.isInteger(regiaoId) || !(await db.prepare('SELECT 1 FROM regioes WHERE id = ?').get(regiaoId))) {
     return { ok: false, erro: 'Selecione o bairro/região.' };
   }
 
@@ -42,7 +42,7 @@ function validar(corpo) {
   let coordenadorId = null;
   if (corpo.coordenador_id !== null && corpo.coordenador_id !== undefined && corpo.coordenador_id !== '') {
     coordenadorId = Number(corpo.coordenador_id);
-    if (!Number.isInteger(coordenadorId) || !db.prepare('SELECT 1 FROM coordenadores WHERE id = ?').get(coordenadorId)) {
+    if (!Number.isInteger(coordenadorId) || !(await db.prepare('SELECT 1 FROM coordenadores WHERE id = ?').get(coordenadorId))) {
       return { ok: false, erro: 'Coordenador responsável não encontrado.' };
     }
   }
@@ -63,17 +63,17 @@ function validar(corpo) {
 }
 
 /** GET /api/propostas — todas, mais recentes primeiro. */
-propostasRouter.get('/', (req, res) => {
-  res.json(db.prepare(`${SELECT_BASE} ORDER BY p.criado_em DESC, p.id DESC`).all());
+propostasRouter.get('/', async (req, res) => {
+  res.json(await db.prepare(`${SELECT_BASE} ORDER BY p.criado_em DESC, p.id DESC`).all());
 });
 
 /** POST /api/propostas */
-propostasRouter.post('/', (req, res) => {
-  const v = validar(req.body);
+propostasRouter.post('/', async (req, res) => {
+  const v = await validar(req.body);
   if (!v.ok) return res.status(400).json({ erro: v.erro });
 
-  const { ok, ...campos } = v; // tira o 'ok' — better-sqlite3 recusa chave extra
-  const { lastInsertRowid } = db
+  const { ok, ...campos } = v; // tira o 'ok' — o banco recusa chave extra
+  const { lastInsertRowid } = await db
     .prepare(
       `INSERT INTO propostas
          (proponente, telefone, regiao_id, coordenador_id, endereco, publico,
@@ -84,26 +84,26 @@ propostasRouter.post('/', (req, res) => {
     )
     .run(campos);
 
-  res.status(201).json(buscar(lastInsertRowid));
+  res.status(201).json(await buscar(lastInsertRowid));
 });
 
 /** PATCH /api/propostas/:id/status — body: { status } */
-propostasRouter.patch('/:id/status', (req, res) => {
-  const existe = buscar(req.params.id);
+propostasRouter.patch('/:id/status', async (req, res) => {
+  const existe = await buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Proposta não encontrada.' });
 
   const status = String(req.body.status ?? '');
   if (!STATUS.has(status)) return res.status(400).json({ erro: 'Status inválido.' });
 
-  db.prepare('UPDATE propostas SET status = ? WHERE id = ?').run(status, existe.id);
-  res.json(buscar(existe.id));
+  await db.prepare('UPDATE propostas SET status = ? WHERE id = ?').run(status, existe.id);
+  res.json(await buscar(existe.id));
 });
 
 /** DELETE /api/propostas/:id */
-propostasRouter.delete('/:id', (req, res) => {
-  const existe = buscar(req.params.id);
+propostasRouter.delete('/:id', async (req, res) => {
+  const existe = await buscar(req.params.id);
   if (!existe) return res.status(404).json({ erro: 'Proposta não encontrada.' });
 
-  db.prepare('DELETE FROM propostas WHERE id = ?').run(existe.id);
+  await db.prepare('DELETE FROM propostas WHERE id = ?').run(existe.id);
   res.json({ ok: true });
 });
