@@ -8,6 +8,10 @@ import { timesRouter } from './routes/times.js';
 import { coordenadoresRouter } from './routes/coordenadores.js';
 import { lembretesRouter } from './routes/lembretes.js';
 import { propostasRouter } from './routes/propostas.js';
+import { cabosRouter } from './routes/cabos.js';
+import { authRouter } from './routes/auth.js';
+import { usuariosRouter } from './routes/usuarios.js';
+import { exigirLogin } from './auth.js';
 import { agendarDisparoDiario } from './lembretes.js';
 
 const PORT = process.env.PORT || 3001;
@@ -38,6 +42,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Público: login/bootstrap (sem token).
+app.use('/api/auth', authRouter);
+
+// Daqui para baixo, tudo exige estar logado.
+app.use('/api', exigirLogin);
+
+app.use('/api/usuarios', usuariosRouter);
 app.use('/api/regioes', regioesRouter);
 app.use('/api/palestrantes', palestrantesRouter);
 app.use('/api/reunioes', reunioesRouter);
@@ -45,6 +56,7 @@ app.use('/api/times', timesRouter);
 app.use('/api/coordenadores', coordenadoresRouter);
 app.use('/api/lembretes', lembretesRouter);
 app.use('/api/propostas', propostasRouter);
+app.use('/api/cabos', cabosRouter);
 
 app.use((req, res) => {
   res.status(404).json({ erro: 'Rota não encontrada.' });

@@ -4,6 +4,8 @@
  * não fica espalhado pelo código.
  */
 
+import { getToken, deslogar } from './auth.js';
+
 class ErroApi extends Error {
   constructor(mensagem, { campos } = {}) {
     super(mensagem);
@@ -13,12 +15,13 @@ class ErroApi extends Error {
 }
 
 async function pedir(url, opcoes = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opcoes.headers || {}) };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   let resposta;
   try {
-    resposta = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
-      ...opcoes,
-    });
+    resposta = await fetch(url, { ...opcoes, headers });
   } catch {
     throw new ErroApi('Sem conexão com o servidor. Ele está rodando?');
   }
@@ -26,6 +29,9 @@ async function pedir(url, opcoes = {}) {
   const corpo = await resposta.json().catch(() => ({}));
 
   if (!resposta.ok) {
+    // Sessão inválida/expirada: derruba para a tela de login (menos nas próprias
+    // rotas de login, para não mascarar "e-mail ou senha incorretos").
+    if (resposta.status === 401 && !url.includes('/api/auth/')) deslogar();
     throw new ErroApi(corpo.erro ?? `Erro ${resposta.status}.`, {
       campos: corpo.campos,
     });
@@ -33,6 +39,29 @@ async function pedir(url, opcoes = {}) {
 
   return corpo;
 }
+
+// ---------- autenticação e usuários ----------
+
+export const authEstado = () => pedir('/api/auth/estado');
+
+export const authBootstrap = (dados) =>
+  pedir('/api/auth/bootstrap', { method: 'POST', body: JSON.stringify(dados) });
+
+export const authLogin = (dados) =>
+  pedir('/api/auth/login', { method: 'POST', body: JSON.stringify(dados) });
+
+export const authEu = () => pedir('/api/auth/eu');
+
+export const listarUsuarios = () => pedir('/api/usuarios');
+
+export const criarUsuario = (dados) =>
+  pedir('/api/usuarios', { method: 'POST', body: JSON.stringify(dados) });
+
+export const editarUsuario = (id, dados) =>
+  pedir(`/api/usuarios/${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+
+export const excluirUsuario = (id) =>
+  pedir(`/api/usuarios/${id}`, { method: 'DELETE' });
 
 export const listarRegioes = () => pedir('/api/regioes');
 
@@ -170,6 +199,46 @@ export const mudarStatusProposta = (id, status) =>
 
 export const excluirProposta = (id) =>
   pedir(`/api/propostas/${id}`, { method: 'DELETE' });
+
+// ---------- cabos ----------
+
+export const listarCabos = ({ coordenadorId, timeId, semCoordenador } = {}) => {
+  const params = new URLSearchParams();
+  if (semCoordenador) params.set('sem_coordenador', '1');
+  else if (coordenadorId) params.set('coordenador_id', coordenadorId);
+  else if (timeId) params.set('time_id', timeId);
+  const qs = params.toString();
+  return pedir(`/api/cabos${qs ? `?${qs}` : ''}`);
+};
+
+export const criarCabo = (dados) =>
+  pedir('/api/cabos', { method: 'POST', body: JSON.stringify(dados) });
+
+export const editarCabo = (id, dados) =>
+  pedir(`/api/cabos/${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+
+export const vincularCabo = (id, coordenadorId) =>
+  pedir(`/api/cabos/${id}/coordenador`, {
+    method: 'PATCH',
+    body: JSON.stringify({ coordenador_id: coordenadorId }),
+  });
+
+export const excluirCabo = (id) =>
+  pedir(`/api/cabos/${id}`, { method: 'DELETE' });
+
+export const importarPreviaCabos = async (file) => {
+  const buffer = await file.arrayBuffer();
+  return pedir(
+    `/api/cabos/importar/previa?arquivo=${encodeURIComponent(file.name)}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buffer }
+  );
+};
+
+export const importarConfirmarCabos = (linhas) =>
+  pedir('/api/cabos/importar/confirmar', {
+    method: 'POST',
+    body: JSON.stringify({ linhas }),
+  });
 
 // ---------- lembretes ----------
 

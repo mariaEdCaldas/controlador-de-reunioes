@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "dev": "node --watch src/index.js",
+    "dev": "node --watch-path=./src src/index.js",
     "start": "node src/index.js",
     "migrate": "node src/migrate-cli.js",
     "seed": "node src/seed.js",
@@ -13,10 +13,12 @@
     "db:reset": "node src/db-reset.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.2.0",
     "cors": "^2.8.5",
     "exceljs": "^4.4.0",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
     "nodemailer": "^9.0.4"
   }
 }
