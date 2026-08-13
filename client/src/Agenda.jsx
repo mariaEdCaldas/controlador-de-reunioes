@@ -180,7 +180,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
               : `${reunioes.length} reuni${reunioes.length === 1 ? 'ão' : 'ões'} — mais recentes primeiro`}
           </p>
         </div>
-        <button className="botao primario" onClick={aoNovaReuniao}>
+        <button className="botao primario" onClick={() => aoNovaReuniao()}>
           + Nova reunião
         </button>
       </header>

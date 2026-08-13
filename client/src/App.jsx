@@ -15,11 +15,19 @@ const NAV = [
 export default function App() {
   const [aba, setAba] = useState('agenda');
   const [recarga, setRecarga] = useState(0);
+  // Valores para pré-preencher a Nova Reunião (quando vem de uma proposta).
+  const [reuniaoInicial, setReuniaoInicial] = useState(null);
   // Se a imagem do banner não estiver em client/public/paulo-correa.png,
   // cai no texto para não deixar o menu quebrado.
   const [semBanner, setSemBanner] = useState(false);
 
+  function abrirNovaReuniao(inicial = null) {
+    setReuniaoInicial(inicial);
+    setAba('nova');
+  }
+
   function voltarParaAgenda() {
+    setReuniaoInicial(null);
     setRecarga((n) => n + 1);
     setAba('agenda');
   }
@@ -60,9 +68,11 @@ export default function App() {
 
       <main className="conteudo">
         {aba === 'agenda' && (
-          <PainelAgenda key={recarga} aoNovaReuniao={() => setAba('nova')} />
+          <PainelAgenda key={recarga} aoNovaReuniao={abrirNovaReuniao} />
         )}
-        {aba === 'nova' && <NovaReuniao aoConcluir={voltarParaAgenda} />}
+        {aba === 'nova' && (
+          <NovaReuniao aoConcluir={voltarParaAgenda} inicial={reuniaoInicial} />
+        )}
         {aba === 'rodrigo' && <AgendaRodrigo />}
         {aba === 'pessoas' && <Pessoas />}
         {aba === 'lembretes' && <Lembretes />}

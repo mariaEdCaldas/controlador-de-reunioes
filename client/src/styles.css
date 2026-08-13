@@ -563,6 +563,74 @@ input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--er
 .ico-wpp { width: 17px; height: 17px; display: block; }
 
 /* =========================================================================
+   PROPOSTAS DE REUNIÃO
+   ========================================================================= */
+.barra-filtros { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.barra-filtros .busca { margin-bottom: 0; }
+
+/* Sub-bloco por bairro dentro de uma região. Quando há 2+ propostas no mesmo
+   bairro, o bloco ganha destaque: é uma possível JUNÇÃO de reuniões. */
+.bairro-bloco { margin: 0 0 14px; padding-left: 12px; border-left: 3px solid var(--linha); }
+.bairro-bloco.juntar {
+  border-left-color: var(--dourado);
+  background: linear-gradient(90deg, var(--dourado-claro), transparent 60%);
+  border-radius: 0 var(--raio-pequeno) var(--raio-pequeno) 0;
+  padding: 8px 8px 8px 12px;
+}
+.bairro-cabeca { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.bairro-nome { font-size: 14px; font-weight: 700; color: var(--tinta); }
+.bairro-contagem { font-size: 12px; color: var(--cinza); }
+.tag-juntar {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7a5c12;
+  background: var(--dourado-claro);
+  border: 1px solid var(--dourado-linha);
+  border-radius: 20px;
+  padding: 1px 9px;
+}
+.tag-candidatos {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #8c2b2b;
+  background: var(--erro-fundo);
+  border: 1px solid var(--erro-linha);
+  border-radius: 20px;
+  padding: 1px 9px;
+}
+
+.proposta-card { display: flex; flex-direction: column; gap: 8px; }
+.proposta-card.status-aprovada { border-left: 4px solid var(--verde); }
+.proposta-card.status-recusada { background: var(--bege-2); opacity: 0.75; }
+.proposta-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.proposta-ident .item-nome { font-size: 15px; font-weight: 700; }
+.proposta-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 3px; font-size: 12.5px; color: var(--tinta-suave); }
+.candidato-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dourado-escuro, #7a5c12);
+  background: var(--dourado-claro);
+  border: 1px solid var(--dourado-linha);
+  border-radius: 20px;
+  padding: 1px 9px;
+}
+.proposta-publico { font-weight: 600; }
+.proposta-linha { font-size: 13.5px; color: var(--tinta-suave); }
+.proposta-obs { font-size: 12.5px; color: var(--cinza); font-style: italic; }
+.proposta-rodape {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; border-top: 1px solid var(--linha); padding-top: 10px;
+}
+.proposta-contato { display: flex; gap: 6px; align-items: center; }
+.proposta-sem-tel { font-size: 12px; color: var(--cinza); }
+.proposta-acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Badge de status das propostas (reaproveita .status). */
+.status.pendente { background: var(--dourado-claro); color: #8a6410; border: 1px solid var(--dourado-linha); }
+.status.aprovada { background: #eef6f0; color: #14612f; border: 1px solid #c9e3d2; }
+.status.recusada { background: var(--erro-fundo); color: #8c2b2b; border: 1px solid var(--erro-linha); }
+
+/* =========================================================================
    SUGESTÕES DE PALESTRANTE (RN-03)
    ========================================================================= */
 .painel-sugestoes h2 { margin-bottom: 4px; }

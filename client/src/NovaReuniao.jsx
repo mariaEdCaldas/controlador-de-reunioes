@@ -12,10 +12,11 @@ const VAZIO = {
  * Cadastra a reunião da agenda. Depois de salvar, oferece a folha de impressão
  * (padrão da Agenda Capital) e, opcionalmente, a sugestão de palestrante.
  */
-export default function NovaReuniao({ aoConcluir }) {
+export default function NovaReuniao({ aoConcluir, inicial }) {
   const [regioes, setRegioes] = useState([]);
   const [coordenadores, setCoordenadores] = useState([]);
-  const [form, setForm] = useState(VAZIO);
+  // `inicial` vem de uma proposta (aba Propostas) para pré-preencher o cadastro.
+  const [form, setForm] = useState({ ...VAZIO, ...(inicial || {}) });
   const [coordSelecionado, setCoordSelecionado] = useState(null);
   const [erros, setErros] = useState({});
   const [erroGeral, setErroGeral] = useState('');

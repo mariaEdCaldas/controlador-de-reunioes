@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import Agenda from './Agenda.jsx';
 import Historico from './Historico.jsx';
+import Propostas from './Propostas.jsx';
 
 const SECOES = [
   { id: 'agenda', rotulo: 'Agenda' },
   { id: 'regioes', rotulo: 'Por região' },
+  { id: 'propostas', rotulo: 'Propostas' },
   { id: 'historico', rotulo: 'Histórico' },
 ];
 
@@ -31,6 +33,7 @@ export default function PainelAgenda({ aoNovaReuniao }) {
 
       {secao === 'agenda' && <Agenda aoNovaReuniao={aoNovaReuniao} />}
       {secao === 'regioes' && <Agenda porRegiao aoNovaReuniao={aoNovaReuniao} />}
+      {secao === 'propostas' && <Propostas aoCriarReuniao={aoNovaReuniao} />}
       {secao === 'historico' && <Historico />}
     </>
   );

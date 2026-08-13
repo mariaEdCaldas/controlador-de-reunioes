@@ -155,6 +155,22 @@ export const importarConfirmarPlanilha = (linhas) =>
     body: JSON.stringify({ linhas }),
   });
 
+// ---------- propostas de reunião ----------
+
+export const listarPropostas = () => pedir('/api/propostas');
+
+export const criarProposta = (dados) =>
+  pedir('/api/propostas', { method: 'POST', body: JSON.stringify(dados) });
+
+export const mudarStatusProposta = (id, status) =>
+  pedir(`/api/propostas/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+
+export const excluirProposta = (id) =>
+  pedir(`/api/propostas/${id}`, { method: 'DELETE' });
+
 // ---------- lembretes ----------
 
 export const previaLembretes = () => pedir('/api/lembretes/previa');

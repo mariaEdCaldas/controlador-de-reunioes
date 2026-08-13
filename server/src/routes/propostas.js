@@ -1,0 +1,92 @@
+import { Router } from 'express';
+import { db } from '../db.js';
+
+export const propostasRouter = Router();
+
+const SELECT_BASE = `
+  SELECT p.id, p.proponente, p.telefone, p.regiao_id, reg.nome AS regiao,
+         p.endereco, p.publico, p.candidato, p.data_sugerida, p.observacoes,
+         p.status, p.criado_em
+    FROM propostas p
+    JOIN regioes reg ON reg.id = p.regiao_id
+`;
+
+const buscar = (id) => db.prepare(`${SELECT_BASE} WHERE p.id = ?`).get(id);
+
+const STATUS = new Set(['pendente', 'aprovada', 'recusada']);
+
+/** Valida a proposta: só proponente e bairro/região são obrigatórios. */
+function validar(corpo) {
+  const proponente = String(corpo.proponente ?? '').trim();
+  if (!proponente) return { ok: false, erro: 'Informe quem está propondo.' };
+
+  const regiaoId = Number(corpo.regiao_id);
+  if (!Number.isInteger(regiaoId) || !db.prepare('SELECT 1 FROM regioes WHERE id = ?').get(regiaoId)) {
+    return { ok: false, erro: 'Selecione o bairro/região.' };
+  }
+
+  let publico = null;
+  if (corpo.publico !== null && corpo.publico !== undefined && corpo.publico !== '') {
+    publico = Number(corpo.publico);
+    if (!Number.isInteger(publico) || publico < 0) return { ok: false, erro: 'Público inválido.' };
+  }
+
+  const data = String(corpo.data_sugerida ?? '').trim();
+  if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) return { ok: false, erro: 'Data sugerida inválida.' };
+
+  return {
+    ok: true,
+    proponente,
+    telefone: String(corpo.telefone ?? '').trim() || null,
+    regiao_id: regiaoId,
+    endereco: String(corpo.endereco ?? '').trim() || null,
+    publico,
+    candidato: String(corpo.candidato ?? '').trim() || null,
+    data_sugerida: data || null,
+    observacoes: String(corpo.observacoes ?? '').trim() || null,
+  };
+}
+
+/** GET /api/propostas — todas, mais recentes primeiro. */
+propostasRouter.get('/', (req, res) => {
+  res.json(db.prepare(`${SELECT_BASE} ORDER BY p.criado_em DESC, p.id DESC`).all());
+});
+
+/** POST /api/propostas */
+propostasRouter.post('/', (req, res) => {
+  const v = validar(req.body);
+  if (!v.ok) return res.status(400).json({ erro: v.erro });
+
+  const { ok, ...campos } = v; // tira o 'ok' — better-sqlite3 recusa chave extra
+  const { lastInsertRowid } = db
+    .prepare(
+      `INSERT INTO propostas
+         (proponente, telefone, regiao_id, endereco, publico, candidato, data_sugerida, observacoes)
+       VALUES
+         (@proponente, @telefone, @regiao_id, @endereco, @publico, @candidato, @data_sugerida, @observacoes)`
+    )
+    .run(campos);
+
+  res.status(201).json(buscar(lastInsertRowid));
+});
+
+/** PATCH /api/propostas/:id/status — body: { status } */
+propostasRouter.patch('/:id/status', (req, res) => {
+  const existe = buscar(req.params.id);
+  if (!existe) return res.status(404).json({ erro: 'Proposta não encontrada.' });
+
+  const status = String(req.body.status ?? '');
+  if (!STATUS.has(status)) return res.status(400).json({ erro: 'Status inválido.' });
+
+  db.prepare('UPDATE propostas SET status = ? WHERE id = ?').run(status, existe.id);
+  res.json(buscar(existe.id));
+});
+
+/** DELETE /api/propostas/:id */
+propostasRouter.delete('/:id', (req, res) => {
+  const existe = buscar(req.params.id);
+  if (!existe) return res.status(404).json({ erro: 'Proposta não encontrada.' });
+
+  db.prepare('DELETE FROM propostas WHERE id = ?').run(existe.id);
+  res.json({ ok: true });
+});
