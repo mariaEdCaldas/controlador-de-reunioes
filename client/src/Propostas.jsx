@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   listarPropostas, criarProposta, mudarStatusProposta, excluirProposta,
-  listarRegioes, criarRegiao,
+  listarRegioes, criarRegiao, listarCoordenadores, criarReuniao,
 } from './api.js';
 import { formatarData, formatarTelefone, brParaIso, mascaraData } from './regioes.js';
 import { CANDIDATOS } from './candidatos.js';
 import { SUGESTOES_BAIRRO, agruparPorRegiao, contagemPorRegiao } from './regioesCampoGrande.js';
 import Busca, { contemBusca } from './Busca.jsx';
 
+const HORAS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTOS = ['00', '15', '30', '45'];
+
 const VAZIO = {
-  proponente: '', telefone: '', candidato: '', regiao: '',
-  endereco: '', publico: '', data: '', observacoes: '',
+  coordenador: '', telefone: '', candidato: '', regiao: '',
+  endereco: '', publico: '', data: '', hora: '', observacoes: '',
 };
 
 const ROTULO_STATUS = { pendente: 'Pendente', aprovada: 'Aprovada', recusada: 'Recusada' };
@@ -38,10 +42,13 @@ function subgruparPorBairro(itens) {
  * O foco é CONTROLAR POR REGIÃO — e enxergar onde dá para JUNTAR propostas do
  * mesmo bairro numa reunião só (mesmo quando os candidatos são diferentes).
  */
-export default function Propostas({ aoCriarReuniao }) {
+export default function Propostas({ aoCriarReuniao, aoConcluir }) {
   const [propostas, setPropostas] = useState([]);
   const [regioes, setRegioes] = useState([]);
+  const [coordenadores, setCoordenadores] = useState([]);
   const [form, setForm] = useState(VAZIO);
+  const [coordSelecionado, setCoordSelecionado] = useState(null);
+  const [aprovando, setAprovando] = useState(null); // proposta em aprovação (modal)
   const [erros, setErros] = useState({});
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(true);
@@ -50,8 +57,8 @@ export default function Propostas({ aoCriarReuniao }) {
   const [filtroStatus, setFiltroStatus] = useState('ativas'); // ativas | todas | pendente | aprovada | recusada
 
   function carregar() {
-    return Promise.all([listarPropostas(), listarRegioes()])
-      .then(([p, r]) => { setPropostas(p); setRegioes(r); setErro(''); })
+    return Promise.all([listarPropostas(), listarRegioes(), listarCoordenadores()])
+      .then(([p, r, c]) => { setPropostas(p); setRegioes(r); setCoordenadores(c); setErro(''); })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
   }
@@ -63,10 +70,24 @@ export default function Propostas({ aoCriarReuniao }) {
     setErros((x) => ({ ...x, [campo]: undefined }));
   };
 
+  // Ao escolher o coordenador responsável, traz o telefone dele (editável).
+  function mudarCoordenador(valor) {
+    const match = coordenadores.find(
+      (c) => c.nome.toLowerCase() === valor.trim().toLowerCase()
+    );
+    setForm((f) => ({
+      ...f,
+      coordenador: valor,
+      ...(match && match.telefone ? { telefone: formatarTelefone(match.telefone) } : {}),
+    }));
+    setCoordSelecionado(match ?? null);
+    setErros((x) => ({ ...x, coordenador: undefined }));
+  }
+
   async function adicionar(e) {
     e.preventDefault();
     const err = {};
-    if (!form.proponente.trim()) err.proponente = 'Informe quem está propondo.';
+    if (!form.coordenador.trim()) err.coordenador = 'Informe o coordenador responsável.';
     if (!form.regiao.trim()) err.regiao = 'Selecione o bairro/região.';
     const dataIso = form.data.trim() ? brParaIso(form.data) : '';
     if (form.data.trim() && !dataIso) err.data = 'Data inválida (use dd/mm/aaaa).';
@@ -76,17 +97,23 @@ export default function Propostas({ aoCriarReuniao }) {
       const nomeRegiao = form.regiao.trim();
       const existente = regioes.find((r) => r.nome.toLowerCase() === nomeRegiao.toLowerCase());
       const regiao = existente ?? (await criarRegiao(nomeRegiao));
+      const coord = coordenadores.find(
+        (c) => c.nome.toLowerCase() === form.coordenador.trim().toLowerCase()
+      );
       await criarProposta({
-        proponente: form.proponente,
+        proponente: form.coordenador,
+        coordenador_id: coord ? coord.id : null,
         telefone: form.telefone,
         candidato: form.candidato,
         regiao_id: regiao.id,
         endereco: form.endereco,
         publico: form.publico === '' ? null : Number(form.publico),
         data_sugerida: dataIso || null,
+        hora: form.hora || null,
         observacoes: form.observacoes,
       });
       setForm(VAZIO);
+      setCoordSelecionado(null);
       setMostrarForm(false);
       await carregar();
     } catch (e2) {
@@ -109,6 +136,31 @@ export default function Propostas({ aoCriarReuniao }) {
     } catch (e) { setErro(e.message); }
   }
 
+  // Aprovar = criar a reunião automaticamente (só perguntando do som) e marcar a
+  // proposta como aprovada; depois volta para a agenda para ela já aparecer lá.
+  async function confirmarAprovacao(p, som) {
+    setErro('');
+    try {
+      await criarReuniao({
+        nome: `Reunião - ${bairroBase(p.regiao) || p.proponente}`,
+        candidato: p.candidato || '',
+        endereco: p.endereco,
+        data: p.data_sugerida,
+        hora: p.hora,
+        regiao_id: p.regiao_id,
+        coordenador_id: p.coordenador_id ?? null,
+        qtd_cadeiras: p.publico != null ? p.publico : null,
+        tem_som: som,
+      });
+      await mudarStatusProposta(p.id, 'aprovada');
+      setAprovando(null);
+      aoConcluir?.(); // vai para a agenda
+    } catch (e) {
+      setErro(e.message);
+      setAprovando(null);
+    }
+  }
+
   function criarReuniaoDe(p) {
     aoCriarReuniao?.({
       nome: `Reunião - ${bairroBase(p.regiao) || p.proponente}`,
@@ -116,8 +168,8 @@ export default function Propostas({ aoCriarReuniao }) {
       regiao: p.regiao || '',
       endereco: p.endereco || '',
       data: p.data_sugerida ? formatarData(p.data_sugerida) : '',
-      hora: '',
-      coordenador: '',
+      hora: p.hora || '',
+      coordenador: p.coordenador_nome || p.proponente || '',
       qtd_cadeiras: p.publico != null ? String(p.publico) : '',
       tem_som: true,
     });
@@ -157,15 +209,24 @@ export default function Propostas({ aoCriarReuniao }) {
         <form className="cartao form" onSubmit={adicionar} noValidate>
           <div className="linha">
             <label className="campo">
-              <span>Quem propôs <b aria-hidden="true">*</b></span>
+              <span>Coordenador responsável <b aria-hidden="true">*</b></span>
               <input
-                value={form.proponente}
-                onChange={(e) => setCampo('proponente', e.target.value)}
-                placeholder="Nome de quem preencheu a ficha"
-                aria-invalid={Boolean(erros.proponente)}
+                list="lista-coord-proposta"
+                value={form.coordenador}
+                onChange={(e) => mudarCoordenador(e.target.value)}
+                placeholder="Busque um coordenador cadastrado"
+                aria-invalid={Boolean(erros.coordenador)}
                 autoFocus
               />
-              {erros.proponente && <small className="erro-campo">{erros.proponente}</small>}
+              <datalist id="lista-coord-proposta">
+                {coordenadores.map((c) => (
+                  <option key={c.id} value={c.nome} />
+                ))}
+              </datalist>
+              {erros.coordenador && <small className="erro-campo">{erros.coordenador}</small>}
+              {coordSelecionado && (
+                <small className="dica">Traz o telefone do coordenador (dá para editar).</small>
+              )}
             </label>
             <label className="campo">
               <span>Telefone (WhatsApp)</span>
@@ -177,7 +238,7 @@ export default function Propostas({ aoCriarReuniao }) {
               />
             </label>
             <label className="campo">
-              <span>Candidato</span>
+              <span>Deputado federal parceiro</span>
               <select value={form.candidato} onChange={(e) => setCampo('candidato', e.target.value)}>
                 <option value="">— (a definir)</option>
                 {CANDIDATOS.map((c) => (
@@ -215,18 +276,8 @@ export default function Propostas({ aoCriarReuniao }) {
           </div>
 
           <div className="linha">
-            <label className="campo campo-estreito">
-              <span>Público (pessoas)</span>
-              <input
-                type="number"
-                min="0"
-                value={form.publico}
-                onChange={(e) => setCampo('publico', e.target.value)}
-                placeholder="ex.: 80"
-              />
-            </label>
-            <label className="campo campo-estreito">
-              <span>Dia sugerido</span>
+            <label className="campo">
+              <span>Data pretendida</span>
               <input
                 value={form.data}
                 onChange={(e) => setCampo('data', mascaraData(e.target.value))}
@@ -237,6 +288,38 @@ export default function Propostas({ aoCriarReuniao }) {
               />
               {erros.data && <small className="erro-campo">{erros.data}</small>}
             </label>
+            <label className="campo">
+              <span>Hora pretendida</span>
+              <div className="campo-hora">
+                <select
+                  value={(form.hora || '').split(':')[0] || ''}
+                  onChange={(e) => setCampo('hora', e.target.value ? `${e.target.value}:${(form.hora || '').split(':')[1] || '00'}` : '')}
+                >
+                  <option value="">Hora</option>
+                  {HORAS.map((h) => (<option key={h} value={h}>{h}h</option>))}
+                </select>
+                <select
+                  value={(form.hora || '').split(':')[1] || ''}
+                  onChange={(e) => setCampo('hora', `${(form.hora || '').split(':')[0] || '00'}:${e.target.value}`)}
+                  disabled={!(form.hora || '').split(':')[0]}
+                >
+                  {MINUTOS.map((m) => (<option key={m} value={m}>{m}</option>))}
+                </select>
+              </div>
+            </label>
+            <label className="campo campo-estreito">
+              <span>Previsão de pessoas</span>
+              <input
+                type="number"
+                min="0"
+                value={form.publico}
+                onChange={(e) => setCampo('publico', e.target.value)}
+                placeholder="ex.: 80"
+              />
+            </label>
+          </div>
+
+          <div className="linha">
             <label className="campo">
               <span>Observações</span>
               <input
@@ -333,9 +416,9 @@ export default function Propostas({ aoCriarReuniao }) {
                         <PropostaCard
                           key={p.id}
                           proposta={p}
+                          aoAprovar={() => setAprovando(p)}
                           aoStatus={(s) => trocarStatus(p, s)}
                           aoExcluir={() => excluir(p)}
-                          aoCriarReuniao={aoCriarReuniao ? () => criarReuniaoDe(p) : null}
                         />
                       ))}
                     </ul>
@@ -346,11 +429,69 @@ export default function Propostas({ aoCriarReuniao }) {
           ))}
         </>
       )}
+
+      {aprovando && (
+        <AprovarProposta
+          proposta={aprovando}
+          aoFechar={() => setAprovando(null)}
+          aoConfirmar={(som) => confirmarAprovacao(aprovando, som)}
+          aoCompletar={() => { const p = aprovando; setAprovando(null); criarReuniaoDe(p); }}
+        />
+      )}
     </section>
   );
 }
 
-function PropostaCard({ proposta: p, aoStatus, aoExcluir, aoCriarReuniao }) {
+/** Modal de aprovação: cria a reunião a partir da proposta, perguntando só o som. */
+function AprovarProposta({ proposta: p, aoFechar, aoConfirmar, aoCompletar }) {
+  const [som, setSom] = useState(true);
+  const completa = Boolean(p.data_sugerida && p.hora && p.endereco);
+  const faltando = [
+    !p.data_sugerida && 'data',
+    !p.hora && 'hora',
+    !p.endereco && 'endereço',
+  ].filter(Boolean);
+
+  return createPortal(
+    <div className="impressao-overlay" onClick={aoFechar}>
+      <div className="editar-caixa" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
+        <h2>Aprovar e criar reunião</h2>
+        <p className="sub" style={{ margin: '0 0 16px' }}>
+          {bairroBase(p.regiao)}
+          {p.data_sugerida ? ` · ${formatarData(p.data_sugerida)}` : ''}
+          {p.hora ? ` às ${p.hora}` : ''}
+          {p.candidato ? ` · ${p.candidato}` : ''}
+        </p>
+
+        {completa ? (
+          <>
+            <label className="check-som" style={{ marginBottom: 18 }}>
+              <input type="checkbox" checked={som} onChange={(e) => setSom(e.target.checked)} />
+              Vai precisar de som?
+            </label>
+            <div className="acoes-form">
+              <button className="botao primario" onClick={() => aoConfirmar(som)}>Criar reunião</button>
+              <button className="botao" onClick={aoFechar}>Cancelar</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="aviso info">
+              Falta {faltando.join(', ')} nesta proposta — complete no cadastro da reunião.
+            </p>
+            <div className="acoes-form">
+              <button className="botao primario" onClick={aoCompletar}>Abrir cadastro completo</button>
+              <button className="botao" onClick={aoFechar}>Cancelar</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function PropostaCard({ proposta: p, aoAprovar, aoStatus, aoExcluir }) {
   return (
     <li className={`cartao proposta-card status-${p.status}`}>
       <div className="proposta-topo">
@@ -359,7 +500,12 @@ function PropostaCard({ proposta: p, aoStatus, aoExcluir, aoCriarReuniao }) {
           <div className="proposta-meta">
             {p.candidato && <span className="candidato-tag">{p.candidato}</span>}
             {p.publico != null && <span className="proposta-publico">{p.publico} pessoas</span>}
-            {p.data_sugerida && <span className="proposta-data">📅 {formatarData(p.data_sugerida)}</span>}
+            {(p.data_sugerida || p.hora) && (
+              <span className="proposta-data">
+                📅 {p.data_sugerida ? formatarData(p.data_sugerida) : 'dia a definir'}
+                {p.hora ? ` às ${p.hora}` : ''}
+              </span>
+            )}
           </div>
         </div>
         <span className={`status ${p.status}`}>{ROTULO_STATUS[p.status]}</span>
@@ -390,14 +536,11 @@ function PropostaCard({ proposta: p, aoStatus, aoExcluir, aoCriarReuniao }) {
         <div className="proposta-acoes">
           {p.status === 'pendente' ? (
             <>
-              <button className="botao pequeno primario" onClick={() => aoStatus('aprovada')}>Aprovar</button>
+              <button className="botao pequeno primario" onClick={aoAprovar}>Aprovar</button>
               <button className="botao pequeno" onClick={() => aoStatus('recusada')}>Recusar</button>
             </>
           ) : (
             <button className="botao pequeno" onClick={() => aoStatus('pendente')}>Reabrir</button>
-          )}
-          {aoCriarReuniao && p.status !== 'recusada' && (
-            <button className="botao pequeno secundario" onClick={aoCriarReuniao}>Virar reunião</button>
           )}
           <button className="botao pequeno" onClick={aoExcluir} title="Excluir proposta" aria-label="Excluir">🗑️</button>
         </div>

@@ -33,7 +33,9 @@ export default function PainelAgenda({ aoNovaReuniao }) {
 
       {secao === 'agenda' && <Agenda aoNovaReuniao={aoNovaReuniao} />}
       {secao === 'regioes' && <Agenda porRegiao aoNovaReuniao={aoNovaReuniao} />}
-      {secao === 'propostas' && <Propostas aoCriarReuniao={aoNovaReuniao} />}
+      {secao === 'propostas' && (
+        <Propostas aoCriarReuniao={aoNovaReuniao} aoConcluir={() => setSecao('agenda')} />
+      )}
       {secao === 'historico' && <Historico />}
     </>
   );

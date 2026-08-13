@@ -5,10 +5,12 @@ export const propostasRouter = Router();
 
 const SELECT_BASE = `
   SELECT p.id, p.proponente, p.telefone, p.regiao_id, reg.nome AS regiao,
-         p.endereco, p.publico, p.candidato, p.data_sugerida, p.observacoes,
+         p.coordenador_id, c.nome AS coordenador_nome, c.telefone AS coordenador_telefone,
+         p.endereco, p.publico, p.candidato, p.data_sugerida, p.hora, p.observacoes,
          p.status, p.criado_em
     FROM propostas p
     JOIN regioes reg ON reg.id = p.regiao_id
+    LEFT JOIN coordenadores c ON c.id = p.coordenador_id
 `;
 
 const buscar = (id) => db.prepare(`${SELECT_BASE} WHERE p.id = ?`).get(id);
@@ -34,15 +36,28 @@ function validar(corpo) {
   const data = String(corpo.data_sugerida ?? '').trim();
   if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) return { ok: false, erro: 'Data sugerida inválida.' };
 
+  const hora = String(corpo.hora ?? '').trim();
+  if (hora && !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) return { ok: false, erro: 'Hora inválida.' };
+
+  let coordenadorId = null;
+  if (corpo.coordenador_id !== null && corpo.coordenador_id !== undefined && corpo.coordenador_id !== '') {
+    coordenadorId = Number(corpo.coordenador_id);
+    if (!Number.isInteger(coordenadorId) || !db.prepare('SELECT 1 FROM coordenadores WHERE id = ?').get(coordenadorId)) {
+      return { ok: false, erro: 'Coordenador responsável não encontrado.' };
+    }
+  }
+
   return {
     ok: true,
     proponente,
     telefone: String(corpo.telefone ?? '').trim() || null,
     regiao_id: regiaoId,
+    coordenador_id: coordenadorId,
     endereco: String(corpo.endereco ?? '').trim() || null,
     publico,
     candidato: String(corpo.candidato ?? '').trim() || null,
     data_sugerida: data || null,
+    hora: hora || null,
     observacoes: String(corpo.observacoes ?? '').trim() || null,
   };
 }
@@ -61,9 +76,11 @@ propostasRouter.post('/', (req, res) => {
   const { lastInsertRowid } = db
     .prepare(
       `INSERT INTO propostas
-         (proponente, telefone, regiao_id, endereco, publico, candidato, data_sugerida, observacoes)
+         (proponente, telefone, regiao_id, coordenador_id, endereco, publico,
+          candidato, data_sugerida, hora, observacoes)
        VALUES
-         (@proponente, @telefone, @regiao_id, @endereco, @publico, @candidato, @data_sugerida, @observacoes)`
+         (@proponente, @telefone, @regiao_id, @coordenador_id, @endereco, @publico,
+          @candidato, @data_sugerida, @hora, @observacoes)`
     )
     .run(campos);
 
