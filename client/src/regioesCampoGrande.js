@@ -108,8 +108,7 @@ const BAIRROS_POR_REGIAO = {
   ],
   Lagoa: [
     'Bandeirantes', 'Jardim Batistão', 'Batistão', 'Caiçara', 'Caiobá',
-    'Coophavilla II', 'Coophavila II', 'Coophavilla', 'Coophavila', 'Coophavilla 2',
-    'Coophavila 2', 'Coophavilla II', 'Leblon', 'Santa Emília', 'Aquários 1',
+    'Coophavila II', 'Coophavila', 'Leblon', 'Santa Emília', 'Aquários 1',
     'Aquários 2', 'São Conrado', 'Taveirópolis', 'Belo Horizonte', 'Tarumã',
     'Tijuca', 'União', 'Vila Jussara', 'Bon Jardim', 'Bonjardim', 'Bonança', 'Buriti',
     'Moreninhas', 'Vila Kellen', 'Vila Anahy',
@@ -169,6 +168,12 @@ INDICE_REGIAO[normalizar('Mata do Segredo')] = 'Segredo';
 export function regiaoDaReuniao(valor) {
   const v = String(valor ?? '').trim();
   if (!v) return null;
+
+  // Coophavila e Coophavila II são sempre Lagoa — qualquer grafia (Coophavilla,
+  // Coophavila 2, Copavila…) resolve sozinha, sem virar uma lista enorme. O
+  // "avil" evita confundir com Coophatrabalho/Coopharádio (que não têm "avil").
+  const norm0 = normalizar(v);
+  if (/^coo?p/.test(norm0) && norm0.includes('avil')) return 'Lagoa';
 
   if (v.includes('/')) {
     const sufixo = normalizar(v.split('/').pop());

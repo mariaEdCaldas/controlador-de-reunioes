@@ -20,9 +20,9 @@ export default function ReuniaoCampos({
 
   // Lista completa para o campo de bairro: todos os bairros oficiais (com a
   // região) mais o que já existir no banco, sem repetir.
-  const opcoesBairro = [
-    ...new Set([...SUGESTOES_BAIRRO, ...regioes.map((r) => r.nome)]),
-  ].sort((a, b) => a.localeCompare(b, 'pt'));
+  // Só a lista oficial (curada). Não mistura o que está no banco para não trazer
+  // grafias/vínculos antigos (ex.: "Coophavila II/Imbirussu" da carga inicial).
+  const opcoesBairro = SUGESTOES_BAIRRO;
 
   return (
     <>
