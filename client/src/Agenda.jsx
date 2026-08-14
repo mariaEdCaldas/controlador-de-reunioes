@@ -138,12 +138,25 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
     }
   }
 
-  const visiveis = reunioes.filter((r) =>
-    contemBusca(
-      `${r.nome ?? ''} ${r.local ?? ''} ${r.endereco ?? ''} ${r.candidato ?? ''} ${r.coordenador_nome ?? ''} ${r.regiao ?? ''}`,
-      busca
+  // Ordena por proximidade: primeiro as de hoje/futuras (da mais próxima para a
+  // mais distante); depois as já passadas (a mais recente primeiro).
+  const hoje = hojeISO();
+  function ordenarProximas(a, b) {
+    const aPass = (a.data || '') < hoje;
+    const bPass = (b.data || '') < hoje;
+    if (aPass !== bPass) return aPass ? 1 : -1;
+    const cmp = (a.data || '').localeCompare(b.data || '') || (a.hora || '').localeCompare(b.hora || '');
+    return aPass ? -cmp : cmp;
+  }
+
+  const visiveis = reunioes
+    .filter((r) =>
+      contemBusca(
+        `${r.nome ?? ''} ${r.local ?? ''} ${r.endereco ?? ''} ${r.candidato ?? ''} ${r.coordenador_nome ?? ''} ${r.regiao ?? ''}`,
+        busca
+      )
     )
-  );
+    .sort(ordenarProximas);
 
   // Um só jeito de montar o card, usado tanto na lista corrida quanto agrupada.
   const renderItem = (r) => (
@@ -178,7 +191,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
           <p className="sub">
             {porRegiao
               ? 'reuniões agrupadas pela região do bairro'
-              : `${reunioes.length} reuni${reunioes.length === 1 ? 'ão' : 'ões'} — mais recentes primeiro`}
+              : `${reunioes.length} reuni${reunioes.length === 1 ? 'ão' : 'ões'} — próximas primeiro`}
           </p>
         </div>
         <button className="botao primario" onClick={() => aoNovaReuniao()}>
