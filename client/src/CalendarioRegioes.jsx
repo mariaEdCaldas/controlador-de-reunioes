@@ -11,10 +11,10 @@ const MESES = [
 const COR_SEM_REGIAO = '#d7dccf';
 const pad = (n) => String(n).padStart(2, '0');
 
-function hojeISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
+// Meses fixos da campanha (sempre visíveis, mesmo sem reunião marcada). Se
+// houver reunião fora desse intervalo, o calendário se estende para incluí-la.
+const CAMPANHA_INI = '2026-08';
+const CAMPANHA_FIM = '2026-10';
 
 const corDaRegiao = (regiao) =>
   regiao === 'Sem região' ? COR_SEM_REGIAO : REGIAO_COR[regiao] || COR_SEM_REGIAO;
@@ -60,10 +60,13 @@ export default function CalendarioRegioes({ reunioes }) {
     e.itens.push(r);
   }
 
-  if (porDia.size === 0) return null;
-
+  // Intervalo: sempre os meses da campanha; estende se houver reunião fora deles.
   const datas = [...porDia.keys()].sort();
-  const meses = enumerarMeses(datas[0], datas[datas.length - 1] || datas[0] || hojeISO());
+  const primeiroMes = datas.length ? datas[0].slice(0, 7) : CAMPANHA_INI;
+  const ultimoMes = datas.length ? datas[datas.length - 1].slice(0, 7) : CAMPANHA_FIM;
+  const iniMes = primeiroMes < CAMPANHA_INI ? primeiroMes : CAMPANHA_INI;
+  const fimMes = ultimoMes > CAMPANHA_FIM ? ultimoMes : CAMPANHA_FIM;
+  const meses = enumerarMeses(`${iniMes}-01`, `${fimMes}-01`);
 
   return (
     <div className="cartao cal-regioes">

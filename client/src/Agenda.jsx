@@ -192,26 +192,35 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
 
       {carregando ? (
         <p className="vazio">Carregando…</p>
+      ) : porRegiao ? (
+        <>
+          {/* O calendário da campanha aparece sempre, mesmo sem reunião. */}
+          <CalendarioRegioes reunioes={visiveis} />
+          {reunioes.length === 0 ? (
+            <p className="vazio">Nenhuma reunião cadastrada ainda — cadastre uma e o dia se pinta no calendário.</p>
+          ) : visiveis.length === 0 ? (
+            <p className="vazio">Nenhuma reunião encontrada para essa busca.</p>
+          ) : (
+            <>
+              <PainelRegioes reunioes={visiveis} />
+              {grupos.map((g) => (
+                <div className="grupo-regiao" key={g.regiao}>
+                  <h2 className="regiao-titulo">
+                    <span className="regiao-nome">{g.rotulo}</span>
+                    <span className="regiao-contagem">
+                      {g.itens.length} reuni{g.itens.length === 1 ? 'ão' : 'ões'}
+                    </span>
+                  </h2>
+                  <ul className="lista lista-cartoes">{g.itens.map(renderItem)}</ul>
+                </div>
+              ))}
+            </>
+          )}
+        </>
       ) : reunioes.length === 0 ? (
         <p className="vazio">Nenhuma reunião cadastrada ainda.</p>
       ) : visiveis.length === 0 ? (
         <p className="vazio">Nenhuma reunião encontrada para essa busca.</p>
-      ) : porRegiao ? (
-        <>
-        <CalendarioRegioes reunioes={visiveis} />
-        <PainelRegioes reunioes={visiveis} />
-        {grupos.map((g) => (
-          <div className="grupo-regiao" key={g.regiao}>
-            <h2 className="regiao-titulo">
-              <span className="regiao-nome">{g.rotulo}</span>
-              <span className="regiao-contagem">
-                {g.itens.length} reuni{g.itens.length === 1 ? 'ão' : 'ões'}
-              </span>
-            </h2>
-            <ul className="lista lista-cartoes">{g.itens.map(renderItem)}</ul>
-          </div>
-        ))}
-        </>
       ) : (
         <ul className="lista lista-cartoes">{visiveis.map(renderItem)}</ul>
       )}
