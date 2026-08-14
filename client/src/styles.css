@@ -58,6 +58,9 @@ body {
   font-family: var(--fonte);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  /* O sistema é claro: força as listas nativas (select/datalist/date) a saírem
+     brancas mesmo com o navegador/SO em modo escuro (senão vêm pretas). */
+  color-scheme: light;
 }
 
 /* =========================================================================
@@ -335,7 +338,10 @@ input, select {
   border-radius: var(--raio-pequeno);
   background: var(--papel);
   color: var(--tinta);
+  color-scheme: light; /* lista do dropdown branca, não preta */
 }
+/* A lista de opções (option) também branca com texto escuro. */
+option { background: #ffffff; color: var(--tinta); }
 input:focus, select:focus { outline: 2px solid var(--dourado); outline-offset: -1px; }
 input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--erro); }
 
@@ -599,33 +605,34 @@ input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--er
 .cal-cabeca h2 { margin: 0; }
 .cal-cabeca .sub { margin: 0; }
 
-.cal-meses { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 20px; }
+/* Meses compactos: cada um entre 190–215px (não estica pela largura toda). */
+.cal-meses { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 215px)); justify-content: start; gap: 12px 18px; }
 .cal-mes-titulo {
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--verde-escuro);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
-.cal-semana, .cal-grade { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-.cal-semana { margin-bottom: 3px; }
-.cal-semana span { text-align: center; font-size: 9.5px; font-weight: 700; color: var(--cinza); }
+.cal-semana, .cal-grade { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-semana { margin-bottom: 2px; }
+.cal-semana span { text-align: center; font-size: 8.5px; font-weight: 700; color: var(--cinza); }
 
 .cal-dia {
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  border-radius: 5px;
+  font-size: 11px;
+  border-radius: 4px;
   background: var(--bege-2);
   color: var(--tinta-suave);
 }
 .cal-dia.vazio { background: transparent; }
 .cal-dia.marcado {
   font-weight: 700;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
   cursor: default;
 }
 
