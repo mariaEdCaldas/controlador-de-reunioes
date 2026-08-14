@@ -8,6 +8,7 @@ import FinalizarReuniao from './FinalizarReuniao.jsx';
 import Busca, { contemBusca } from './Busca.jsx';
 import { agruparPorRegiao, contagemPorRegiao } from './regioesCampoGrande.js';
 import { compartilharFolhaWhatsapp } from './compartilharFolha.jsx';
+import CalendarioRegioes from './CalendarioRegioes.jsx';
 
 /** Ícone do WhatsApp por imagem (/icones/whatsapp.png); cai no emoji se faltar. */
 function IconeWhatsapp() {
@@ -197,6 +198,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
         <p className="vazio">Nenhuma reunião encontrada para essa busca.</p>
       ) : porRegiao ? (
         <>
+        <CalendarioRegioes reunioes={visiveis} />
         <PainelRegioes reunioes={visiveis} />
         {grupos.map((g) => (
           <div className="grupo-regiao" key={g.regiao}>

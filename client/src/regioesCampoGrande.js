@@ -32,6 +32,34 @@ export const REGIAO_ROTULO = {
   'Sem região': 'Sem região definida',
 };
 
+/**
+ * Cor de cada região no calendário — a mesma paleta que o gabinete já usava no
+ * quadro (Miro). Validada: as 7 se distinguem inclusive para daltônicos.
+ */
+export const REGIAO_COR = {
+  Centro: '#86d5ec',
+  Segredo: '#e9a85c',
+  Prosa: '#f08cc4',
+  Bandeira: '#f3e97e',
+  Anhanduizinho: '#a93b6e',
+  Lagoa: '#8fd14f',
+  Imbirussu: '#9c8fd9',
+};
+
+/** Ordem das regiões na legenda do calendário (igual ao quadro). */
+export const REGIOES_LEGENDA = ['Anhanduizinho', 'Bandeira', 'Prosa', 'Lagoa', 'Imbirussu', 'Centro', 'Segredo'];
+
+/** Preto ou branco sobre a cor, pelo brilho — para o número do dia ficar legível. */
+export function textoSobre(hex) {
+  const h = String(hex || '').replace('#', '');
+  if (h.length < 6) return '#1c2b22';
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? '#1c2b22' : '#ffffff';
+}
+
 /** Bairros de cada região, conforme a tabela oficial (imagem de regiões). */
 const BAIRROS_POR_REGIAO = {
   Centro: [
