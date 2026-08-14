@@ -80,7 +80,7 @@ const BAIRROS_POR_REGIAO = {
   Prosa: [
     'Autonomista', 'Carandá', 'Vila Nascente', 'Chácara Cachoeira', 'Cidade Jardim',
     'Chácara dos Poderes', 'Estrela Dalva', 'Margarida', 'Mata do Jacinto', 'Noroeste',
-    'Vila Futurista', 'Danúbio Azul', 'Novos Estados', 'Santa Fé', 'Taquaral Bosque',
+    'Vila Futurista', 'Danúbio Azul', 'Vila Danúbio Azul', 'Novos Estados', 'Santa Fé', 'Taquaral Bosque',
     'Jardim Montevideu', 'Jardim Montevidéu', 'Veraneio', 'Jardim Veraneio', 'Vivendas do Bosque',
     'Vila Miguel Couto', 'Novo Maranhão', 'Nova Bahia', 'Carandá Bosque',
     'Residencial Sóter', 'Residencial Soter', 'Res Sóter', 'Res Soter',
