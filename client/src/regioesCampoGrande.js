@@ -92,7 +92,7 @@ const BAIRROS_POR_REGIAO = {
     'Arnaldo Estevão', 'Recanto dos Rouxinóis', 'Coopharádio', 'Vila Santo Eugênio',
     'Cidade Morena', 'Jardim Flamboyant', 'Jardim Itamaracá', 'Jardim Noroeste',
     'Jardim Pacaembu', 'Residencial Oiti', 'Moreninha III', 'Moreninha II', 'Moreninha I',
-    'Jardim Tropical',
+    'Moreninha IV', 'Moreninha V', 'Jardim Tropical', 'Vila Cidade Morena',
   ],
   Anhanduizinho: [
     'Aero Rancho', 'Alves Pereira', 'América', 'Centenário', 'Centro-Oeste',
@@ -111,7 +111,7 @@ const BAIRROS_POR_REGIAO = {
     'Coophavila II', 'Coophavila', 'Leblon', 'Santa Emília', 'Aquários 1',
     'Aquários 2', 'São Conrado', 'Taveirópolis', 'Belo Horizonte', 'Tarumã',
     'Tijuca', 'União', 'Vila Jussara', 'Bon Jardim', 'Bonjardim', 'Bonança', 'Buriti',
-    'Moreninhas', 'Vila Kellen', 'Vila Anahy',
+    'Moreninhas', 'Vila Kellen', 'Vila Anahy', 'Jardim Tarumã', 'Vila Bandeirantes',
   ],
   Imbirussu: [
     'Região do Imbirussu', 'Indubrasil', 'Nova Campo Grande', 'Panamá', 'Popular',

@@ -49,7 +49,11 @@ function enumerarMeses(isoIni, isoFim) {
  * dia — a região vem do bairro de cada reunião (mesma lógica da agenda por
  * região). Atualiza sozinho conforme as reuniões são cadastradas.
  */
-export default function CalendarioRegioes({ reunioes }) {
+export default function CalendarioRegioes({
+  reunioes,
+  titulo = 'Calendário por região',
+  sub = 'cada dia se pinta com a região das reuniões marcadas',
+}) {
   const porDia = new Map(); // ISO -> { regioes: [], itens: [] }
   for (const r of reunioes) {
     if (!r.data) continue;
@@ -71,8 +75,8 @@ export default function CalendarioRegioes({ reunioes }) {
   return (
     <div className="cartao cal-regioes">
       <div className="cal-cabeca">
-        <h2>Calendário por região</h2>
-        <span className="sub">cada dia se pinta com a região das reuniões marcadas</span>
+        <h2>{titulo}</h2>
+        <span className="sub">{sub}</span>
       </div>
 
       <div className="cal-meses">

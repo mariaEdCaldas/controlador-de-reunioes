@@ -7,6 +7,7 @@ import {
 import { formatarData, formatarTelefone, brParaIso, mascaraData } from './regioes.js';
 import { CANDIDATOS } from './candidatos.js';
 import { SUGESTOES_BAIRRO, agruparPorRegiao, contagemPorRegiao } from './regioesCampoGrande.js';
+import { lerCsv, normCab } from './lerCsv.js';
 import Busca, { contemBusca } from './Busca.jsx';
 
 const HORAS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
@@ -55,6 +56,8 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('ativas'); // ativas | todas | pendente | aprovada | recusada
+  const [importando, setImportando] = useState(false);
+  const [msgImport, setMsgImport] = useState('');
 
   function carregar() {
     return Promise.all([listarPropostas(), listarRegioes(), listarCoordenadores()])
@@ -118,6 +121,90 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
       await carregar();
     } catch (e2) {
       setErro(e2.message);
+    }
+  }
+
+  /**
+   * Importa um CSV de propostas (uma ficha por linha). Reaproveita o mesmo
+   * caminho da criação manual: resolve o bairro em região (cria se não existir),
+   * casa o coordenador pelo nome e cria a proposta. Roda no navegador de quem
+   * está logado — então grava no ambiente em que a pessoa está (produção).
+   */
+  async function importarCsv(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite reimportar o mesmo arquivo depois
+    if (!file) return;
+
+    setImportando(true);
+    setMsgImport('');
+    setErro('');
+    try {
+      const matriz = lerCsv(await file.text());
+      if (matriz.length < 2) throw new Error('A planilha está vazia ou só tem o cabeçalho.');
+
+      const cab = matriz[0].map(normCab);
+      const achar = (nomes) => cab.findIndex((c) => nomes.includes(c));
+      const iCoord = achar(['coordenador', 'coordenador responsavel', 'proponente', 'responsavel']);
+      const iTel = achar(['telefone', 'contato', 'whatsapp', 'celular', 'fone']);
+      const iCand = achar(['candidato', 'deputado', 'deputado federal parceiro', 'parceiro']);
+      const iBairro = achar(['bairro', 'regiao', 'bairro / regiao', 'bairro/regiao']);
+      const iEnd = achar(['endereco', 'local']);
+      const iData = achar(['data', 'data sugerida', 'data pretendida']);
+      const iHora = achar(['hora', 'horario']);
+      const iPub = achar(['publico', 'quantidade', 'quantidade de pessoas', 'pessoas', 'previsao']);
+      const iObs = achar(['observacoes', 'obs', 'lideranca']);
+      if (iCoord === -1 && iBairro === -1) {
+        throw new Error('Não achei as colunas. O cabeçalho precisa ter ao menos "Coordenador" e "Bairro".');
+      }
+
+      // Cache de regiões pelo nome, para não recriar a mesma várias vezes.
+      const cacheRegiao = new Map(regioes.map((r) => [r.nome.toLowerCase(), r]));
+      let ok = 0;
+      const problemas = [];
+
+      for (let i = 1; i < matriz.length; i++) {
+        const row = matriz[i];
+        if (!row || row.every((c) => !String(c).trim())) continue;
+        const cel = (idx) => (idx === -1 ? '' : String(row[idx] ?? '').trim());
+        try {
+          const bairro = cel(iBairro) || 'A definir';
+          let reg = cacheRegiao.get(bairro.toLowerCase());
+          if (!reg) { reg = await criarRegiao(bairro); cacheRegiao.set(bairro.toLowerCase(), reg); }
+
+          const coord = coordenadores.find(
+            (c) => c.nome.toLowerCase() === cel(iCoord).toLowerCase()
+          );
+          const dataIso = cel(iData) ? brParaIso(cel(iData)) : '';
+          const hora = cel(iHora);
+          const horaOk = /^\d{1,2}:\d{2}$/.test(hora) ? hora.padStart(5, '0') : null;
+          const pub = (cel(iPub).match(/\d+/) || [])[0];
+
+          await criarProposta({
+            proponente: cel(iCoord) || cel(iObs) || 'A definir',
+            coordenador_id: coord ? coord.id : null,
+            telefone: cel(iTel),
+            candidato: cel(iCand),
+            regiao_id: reg.id,
+            endereco: cel(iEnd),
+            publico: pub ? Number(pub) : null,
+            data_sugerida: dataIso || null,
+            hora: horaOk,
+            observacoes: cel(iObs),
+          });
+          ok++;
+        } catch (err) {
+          problemas.push(`Linha ${i + 1}: ${err.message}`);
+        }
+      }
+
+      await carregar();
+      const resumo = `Importei ${ok} proposta${ok === 1 ? '' : 's'}.`
+        + (problemas.length ? ` ${problemas.length} com problema — ${problemas.slice(0, 3).join('; ')}` : '');
+      setMsgImport(resumo);
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setImportando(false);
     }
   }
 
@@ -199,11 +286,30 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
           </p>
         </div>
         {!mostrarForm && (
-          <button className="botao primario" onClick={() => setMostrarForm(true)}>
-            + Nova proposta
-          </button>
+          <div className="cabecalho-acoes">
+            <label className={`botao ${importando ? 'desativado' : ''}`} title="Importar fichas de uma planilha .csv">
+              {importando ? 'Importando…' : '↑ Importar planilha'}
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={importarCsv}
+                disabled={importando}
+                hidden
+              />
+            </label>
+            <button className="botao primario" onClick={() => setMostrarForm(true)}>
+              + Nova proposta
+            </button>
+          </div>
         )}
       </header>
+
+      {msgImport && (
+        <p className="aviso info" role="status">
+          {msgImport}{' '}
+          <button className="link-inline" type="button" onClick={() => setMsgImport('')}>ok</button>
+        </p>
+      )}
 
       {mostrarForm && (
         <form className="cartao form" onSubmit={adicionar} noValidate>

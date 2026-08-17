@@ -158,6 +158,9 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
     )
     .sort(ordenarProximas);
 
+  // Calendário da Agenda: só as reuniões CONFIRMADAS (exclui as "a confirmar").
+  const confirmadas = visiveis.filter((r) => r.status === 'confirmada' || r.status === 'realizada');
+
   // Um só jeito de montar o card, usado tanto na lista corrida quanto agrupada.
   const renderItem = (r) => (
     <ItemReuniao
@@ -230,12 +233,22 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
             </>
           )}
         </>
-      ) : reunioes.length === 0 ? (
-        <p className="vazio">Nenhuma reunião cadastrada ainda.</p>
-      ) : visiveis.length === 0 ? (
-        <p className="vazio">Nenhuma reunião encontrada para essa busca.</p>
       ) : (
-        <ul className="lista lista-cartoes">{visiveis.map(renderItem)}</ul>
+        <>
+          {/* Calendário só com as reuniões confirmadas — sempre visível. */}
+          <CalendarioRegioes
+            reunioes={confirmadas}
+            titulo="Calendário — reuniões confirmadas"
+            sub="mostra apenas as reuniões já confirmadas"
+          />
+          {reunioes.length === 0 ? (
+            <p className="vazio">Nenhuma reunião cadastrada ainda.</p>
+          ) : visiveis.length === 0 ? (
+            <p className="vazio">Nenhuma reunião encontrada para essa busca.</p>
+          ) : (
+            <ul className="lista lista-cartoes">{visiveis.map(renderItem)}</ul>
+          )}
+        </>
       )}
 
       {imprimir && (
