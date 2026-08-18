@@ -73,6 +73,10 @@ export async function lerPlanilha(buffer, { nomeArquivo = '' } = {}) {
   let colNome = -1;
   let colTel = -1;
   let colTime = -1;
+  let colBairro = -1;
+  let colEndereco = -1;
+  let colRede = -1;
+  let colCand = -1;
   for (let i = 0; i < Math.min(matriz.length, 15); i++) {
     const linha = matriz[i];
     const nome = acharColuna(linha, [/^nome completo$/, /nome completo/, /^nome$/, /^coordenador/]);
@@ -83,6 +87,10 @@ export async function lerPlanilha(buffer, { nomeArquivo = '' } = {}) {
       colNome = nome;
       colTel = tel;
       colTime = time;
+      colBairro = acharColuna(linha, [/bairro/, /regiao/, /região/]);
+      colEndereco = acharColuna(linha, [/endereco/, /endereço/, /^rua/]);
+      colRede = acharColuna(linha, [/rede social/, /instagram/, /perfil/]);
+      colCand = acharColuna(linha, [/candidato/, /deputado/, /parceiro/]);
       break;
     }
   }
@@ -112,11 +120,16 @@ export async function lerPlanilha(buffer, { nomeArquivo = '' } = {}) {
     const telBruto = colTel !== -1 ? (linha[colTel] ?? '').split(/[;\n]/)[0].trim() : '';
     const tel = telBruto ? normalizarTelefone(telBruto) : { ok: false };
 
+    const pega = (i) => (i !== -1 ? (linha[i] ?? '').trim() : '');
     linhas.push({
       nome,
       time: time || null,
       telefone: tel.ok ? tel.telefone : null,
       telefoneOriginal: telBruto || null,
+      bairro: pega(colBairro) || null,
+      endereco: pega(colEndereco) || null,
+      rede_social: pega(colRede) || null,
+      candidato: pega(colCand) || null,
     });
   }
 

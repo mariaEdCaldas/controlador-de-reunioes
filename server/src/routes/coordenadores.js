@@ -6,7 +6,7 @@ import { lerPlanilha, norm } from '../importar-coordenadores.js';
 export const coordenadoresRouter = Router();
 
 const SELECT_BASE = `
-  SELECT c.id, c.nome, c.telefone, c.bairro, c.endereco, c.rede_social,
+  SELECT c.id, c.nome, c.telefone, c.bairro, c.endereco, c.rede_social, c.candidato,
          c.time_id, t.nome AS time_nome
     FROM coordenadores c
     LEFT JOIN times t ON t.id = c.time_id
@@ -33,6 +33,7 @@ function validar(corpo, { exigeNome = true } = {}) {
     bairro: String(corpo.bairro ?? '').trim() || null,
     endereco: String(corpo.endereco ?? '').trim() || null,
     rede_social: String(corpo.rede_social ?? '').trim() || null,
+    candidato: String(corpo.candidato ?? '').trim() || null,
   };
 }
 
@@ -76,8 +77,8 @@ coordenadoresRouter.post('/', async (req, res) => {
   const { ok, ...campos } = v;
   const { lastInsertRowid } = await db
     .prepare(
-      `INSERT INTO coordenadores (nome, telefone, bairro, endereco, rede_social, time_id)
-       VALUES (@nome, @telefone, @bairro, @endereco, @rede_social, @time_id)`
+      `INSERT INTO coordenadores (nome, telefone, bairro, endereco, rede_social, candidato, time_id)
+       VALUES (@nome, @telefone, @bairro, @endereco, @rede_social, @candidato, @time_id)`
     )
     .run({ ...campos, time_id: t.timeId });
 
@@ -96,7 +97,7 @@ coordenadoresRouter.patch('/:id', async (req, res) => {
   await db.prepare(
     `UPDATE coordenadores
         SET nome = @nome, telefone = @telefone, bairro = @bairro,
-            endereco = @endereco, rede_social = @rede_social
+            endereco = @endereco, rede_social = @rede_social, candidato = @candidato
       WHERE id = @id`
   ).run({ ...campos, id: existe.id });
 
@@ -178,7 +179,10 @@ coordenadoresRouter.post('/importar/confirmar', async (req, res) => {
       (await tx.prepare('SELECT id, nome FROM times').all()).map((t) => [norm(t.nome), t.id])
     );
     const inserirTime = tx.prepare('INSERT INTO times (nome) VALUES (?)');
-    const inserirCoord = tx.prepare('INSERT INTO coordenadores (nome, telefone, time_id) VALUES (?, ?, ?)');
+    const inserirCoord = tx.prepare(
+      `INSERT INTO coordenadores (nome, telefone, bairro, endereco, rede_social, candidato, time_id)
+       VALUES (@nome, @telefone, @bairro, @endereco, @rede_social, @candidato, @time_id)`
+    );
 
     let coordenadores = 0;
     let times = 0;
@@ -205,7 +209,15 @@ coordenadoresRouter.post('/importar/confirmar', async (req, res) => {
       }
 
       const telefone = l?.telefone ? String(l.telefone) : null;
-      await inserirCoord.run(nome, telefone, timeId);
+      await inserirCoord.run({
+        nome,
+        telefone,
+        bairro: l?.bairro || null,
+        endereco: l?.endereco || null,
+        rede_social: l?.rede_social || null,
+        candidato: l?.candidato || null,
+        time_id: timeId,
+      });
       nomesExistentes.add(norm(nome));
       coordenadores++;
     }

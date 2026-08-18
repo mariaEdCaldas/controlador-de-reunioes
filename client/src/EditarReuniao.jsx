@@ -46,7 +46,12 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
     const match = coordenadores.find(
       (c) => c.nome.toLowerCase() === valor.trim().toLowerCase()
     );
-    setForm((f) => ({ ...f, coordenador: valor }));
+    // Puxa o deputado vinculado ao coordenador (editável) ao trocar de contato.
+    setForm((f) => ({
+      ...f,
+      coordenador: valor,
+      ...(match?.candidato ? { candidato: match.candidato } : {}),
+    }));
     setCoordSelecionado(match ?? null);
   }
 

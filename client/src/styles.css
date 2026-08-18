@@ -617,7 +617,7 @@ input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--er
 
 /* Meses compactos, lado a lado (quebram linha em telas estreitas). Largura fixa
    para as células ficarem sempre pequenas e alinhadas. */
-.cal-meses { display: flex; flex-wrap: wrap; gap: 16px 24px; }
+.cal-meses { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px 24px; }
 .cal-mes { flex: 0 0 auto; }
 .cal-mes-titulo {
   font-size: 11.5px;
@@ -628,6 +628,9 @@ input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--er
   margin-bottom: 6px;
 }
 .cal-semana, .cal-grade { display: grid; grid-template-columns: repeat(7, 28px); gap: 3px; }
+/* Linhas de altura fixa e coladas ao topo: evita que a 1ª semana (parcial) fique
+   separada do resto se o navegador esticar as linhas do grid. */
+.cal-grade { grid-auto-rows: 28px; align-content: start; }
 .cal-semana { margin-bottom: 2px; }
 .cal-semana span { text-align: center; font-size: 8.5px; font-weight: 700; color: var(--cinza); }
 

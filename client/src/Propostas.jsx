@@ -9,6 +9,7 @@ import { CANDIDATOS } from './candidatos.js';
 import { SUGESTOES_BAIRRO, agruparPorRegiao, contagemPorRegiao } from './regioesCampoGrande.js';
 import { lerCsv, normCab } from './lerCsv.js';
 import Busca, { contemBusca } from './Busca.jsx';
+import CalendarioRegioes from './CalendarioRegioes.jsx';
 
 const HORAS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = ['00', '15', '30', '45'];
@@ -82,6 +83,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
       ...f,
       coordenador: valor,
       ...(match && match.telefone ? { telefone: formatarTelefone(match.telefone) } : {}),
+      ...(match?.candidato ? { candidato: match.candidato } : {}),
     }));
     setCoordSelecionado(match ?? null);
     setErros((x) => ({ ...x, coordenador: undefined }));
@@ -275,6 +277,10 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
   );
   const grupos = agruparPorRegiao(visiveis, (p) => p.regiao);
   const { linhas, total, maximo } = contagemPorRegiao(visiveis, (p) => p.regiao);
+  // Propostas no formato que o calendário entende (usa a data pretendida).
+  const propostasNoCalendario = visiveis.map((p) => ({
+    data: p.data_sugerida, hora: p.hora, regiao: p.regiao, nome: p.proponente,
+  }));
 
   return (
     <section>
@@ -460,6 +466,12 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
       </div>
 
       {erro && <p className="aviso erro">{erro}</p>}
+
+      <CalendarioRegioes
+        reunioes={propostasNoCalendario}
+        titulo="Calendário das propostas"
+        sub="cada dia se pinta com a região das propostas"
+      />
 
       {carregando ? (
         <p className="vazio">Carregando…</p>

@@ -40,7 +40,13 @@ export default function NovaReuniao({ aoConcluir, inicial }) {
     const match = coordenadores.find(
       (c) => c.nome.toLowerCase() === valor.trim().toLowerCase()
     );
-    setForm((f) => ({ ...f, coordenador: valor }));
+    // Se o coordenador tem um deputado vinculado (pelo time), já entra no campo
+    // "Candidatos" — mas segue editável (a pessoa pode trocar).
+    setForm((f) => ({
+      ...f,
+      coordenador: valor,
+      ...(match?.candidato ? { candidato: match.candidato } : {}),
+    }));
     setCoordSelecionado(match ?? null);
   }
 
