@@ -92,6 +92,27 @@ propostasRouter.post('/', async (req, res) => {
   res.status(201).json(await buscar(lastInsertRowid));
 });
 
+/** PATCH /api/propostas/:id — edita os campos da proposta. */
+propostasRouter.patch('/:id', async (req, res) => {
+  const existe = await buscar(req.params.id);
+  if (!existe) return res.status(404).json({ erro: 'Proposta não encontrada.' });
+
+  const v = await validar(req.body);
+  if (!v.ok) return res.status(400).json({ erro: v.erro });
+
+  const { ok, ...c } = v;
+  await db.prepare(
+    `UPDATE propostas
+        SET proponente = @proponente, telefone = @telefone, regiao_id = @regiao_id,
+            coordenador_id = @coordenador_id, endereco = @endereco, publico = @publico,
+            candidato = @candidato, data_sugerida = @data_sugerida, hora = @hora,
+            lideranca = @lideranca, observacoes = @observacoes
+      WHERE id = @id`
+  ).run({ ...c, id: existe.id });
+
+  res.json(await buscar(existe.id));
+});
+
 /** PATCH /api/propostas/:id/status — body: { status } */
 propostasRouter.patch('/:id/status', async (req, res) => {
   const existe = await buscar(req.params.id);

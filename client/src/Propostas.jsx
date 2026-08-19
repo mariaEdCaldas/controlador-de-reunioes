@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  listarPropostas, criarProposta, mudarStatusProposta, excluirProposta,
+  listarPropostas, criarProposta, editarProposta, mudarStatusProposta, excluirProposta,
   listarRegioes, criarRegiao, listarCoordenadores, criarReuniao,
   importarPreviaPropostas, importarConfirmarPropostas,
 } from './api.js';
@@ -55,6 +55,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editandoId, setEditandoId] = useState(null); // proposta em edição (null = nova)
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('ativas'); // ativas | todas | pendente | aprovada | recusada
   const [importando, setImportando] = useState(false);
@@ -106,7 +107,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
       const coord = coordenadores.find(
         (c) => c.nome.toLowerCase() === form.coordenador.trim().toLowerCase()
       );
-      await criarProposta({
+      const dados = {
         proponente: form.coordenador,
         coordenador_id: coord ? coord.id : null,
         telefone: form.telefone,
@@ -118,10 +119,13 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
         hora: form.hora || null,
         lideranca: form.lideranca,
         observacoes: form.observacoes,
-      });
+      };
+      if (editandoId) await editarProposta(editandoId, dados);
+      else await criarProposta(dados);
       setForm(VAZIO);
       setCoordSelecionado(null);
       setMostrarForm(false);
+      setEditandoId(null);
       await carregar();
     } catch (e2) {
       setErro(e2.message);
@@ -163,6 +167,27 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
     } finally {
       setImportando(false);
     }
+  }
+
+  // Abre o formulário preenchido com a proposta, em modo edição.
+  function iniciarEdicao(p) {
+    setEditandoId(p.id);
+    setForm({
+      coordenador: p.coordenador_nome || p.proponente || '',
+      lideranca: p.lideranca || '',
+      telefone: p.telefone ? formatarTelefone(p.telefone) : '',
+      candidato: p.candidato || '',
+      regiao: p.regiao || '',
+      endereco: p.endereco || '',
+      publico: p.publico != null ? String(p.publico) : '',
+      data: p.data_sugerida ? formatarData(p.data_sugerida) : '',
+      hora: p.hora || '',
+      observacoes: p.observacoes || '',
+    });
+    setCoordSelecionado(coordenadores.find((c) => c.id === p.coordenador_id) ?? null);
+    setErros({});
+    setMostrarForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function trocarStatus(p, status) {
@@ -258,7 +283,10 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
                 hidden
               />
             </label>
-            <button className="botao primario" onClick={() => setMostrarForm(true)}>
+            <button
+              className="botao primario"
+              onClick={() => { setEditandoId(null); setForm(VAZIO); setCoordSelecionado(null); setMostrarForm(true); }}
+            >
               + Nova proposta
             </button>
           </div>
@@ -445,8 +473,14 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
           </div>
 
           <div className="acoes-form">
-            <button type="submit" className="botao primario">Salvar proposta</button>
-            <button type="button" className="botao" onClick={() => { setMostrarForm(false); setErros({}); }}>
+            <button type="submit" className="botao primario">
+              {editandoId ? 'Salvar alterações' : 'Salvar proposta'}
+            </button>
+            <button
+              type="button"
+              className="botao"
+              onClick={() => { setMostrarForm(false); setEditandoId(null); setForm(VAZIO); setCoordSelecionado(null); setErros({}); }}
+            >
               Cancelar
             </button>
           </div>
@@ -538,6 +572,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
                           proposta={p}
                           aoAprovar={() => setAprovando(p)}
                           aoStatus={(s) => trocarStatus(p, s)}
+                          aoEditar={() => iniciarEdicao(p)}
                           aoExcluir={() => excluir(p)}
                         />
                       ))}
@@ -611,7 +646,7 @@ function AprovarProposta({ proposta: p, aoFechar, aoConfirmar, aoCompletar }) {
   );
 }
 
-function PropostaCard({ proposta: p, aoAprovar, aoStatus, aoExcluir }) {
+function PropostaCard({ proposta: p, aoAprovar, aoStatus, aoEditar, aoExcluir }) {
   return (
     <li className={`cartao proposta-card status-${p.status}`}>
       <div className="proposta-topo">
@@ -667,6 +702,7 @@ function PropostaCard({ proposta: p, aoAprovar, aoStatus, aoExcluir }) {
           ) : (
             <button className="botao pequeno" onClick={() => aoStatus('pendente')}>Reabrir</button>
           )}
+          <button className="botao pequeno" onClick={aoEditar} title="Editar proposta" aria-label="Editar">✏️</button>
           <button className="botao pequeno" onClick={aoExcluir} title="Excluir proposta" aria-label="Excluir">🗑️</button>
         </div>
       </div>

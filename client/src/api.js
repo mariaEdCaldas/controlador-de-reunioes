@@ -234,6 +234,9 @@ export const listarPropostas = () => pedir('/api/propostas');
 export const criarProposta = (dados) =>
   pedir('/api/propostas', { method: 'POST', body: JSON.stringify(dados) });
 
+export const editarProposta = (id, dados) =>
+  pedir(`/api/propostas/${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+
 export const mudarStatusProposta = (id, status) =>
   pedir(`/api/propostas/${id}/status`, {
     method: 'PATCH',
