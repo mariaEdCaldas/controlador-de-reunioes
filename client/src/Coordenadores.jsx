@@ -9,6 +9,8 @@ import {
   excluirCoordenador,
   importarPreviaPlanilha,
   importarConfirmarPlanilha,
+  importarPreviaCadastros,
+  importarConfirmarCadastros,
 } from './api.js';
 import { formatarTelefone } from './regioes.js';
 import Busca, { contemBusca } from './Busca.jsx';
@@ -38,9 +40,11 @@ export default function Coordenadores() {
   const [busca, setBusca] = useState('');
   // Importação de planilha: prévia (o que seria importado, sem gravar).
   const [previa, setPrevia] = useState(null);
+  const [previaCad, setPreviaCad] = useState(null); // planilha do gabinete (coord+cabos)
   const [importando, setImportando] = useState(false);
   const [aviso, setAviso] = useState('');
   const inputArquivo = useRef(null);
+  const inputCadastros = useRef(null);
 
   function carregar() {
     const args =
@@ -138,6 +142,42 @@ export default function Coordenadores() {
     }
   }
 
+  // Planilha do gabinete: coordenadores + cabos juntos, com o deputado vinculado.
+  async function aoEscolherCadastros(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setErro(''); setAviso(''); setPrevia(null); setPreviaCad(null);
+    setImportando(true);
+    try {
+      const p = await importarPreviaCadastros(file);
+      setPreviaCad({ ...p, arquivo: file.name });
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setImportando(false);
+    }
+  }
+
+  async function confirmarCadastros() {
+    setImportando(true);
+    setErro('');
+    try {
+      const r = await importarConfirmarCadastros(previaCad.linhas);
+      setAviso(
+        `Importado: ${r.coordenadores} coordenador(es), ${r.cabos} cabo(s)` +
+          (r.times ? ` e ${r.times} time(s) novo(s)` : '') +
+          (r.pulados ? `. ${r.pulados} já existia(m) e foi(ram) ignorado(s).` : '.')
+      );
+      setPreviaCad(null);
+      await carregar();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setImportando(false);
+    }
+  }
+
   const visiveis = coordenadores.filter((c) =>
     contemBusca(`${c.nome} ${c.bairro ?? ''} ${c.rede_social ?? ''} ${c.telefone ?? ''}`, busca)
   );
@@ -160,12 +200,28 @@ export default function Coordenadores() {
             style={{ display: 'none' }}
             onChange={aoEscolherArquivo}
           />
+          <input
+            ref={inputCadastros}
+            type="file"
+            accept=".xlsx,.csv"
+            style={{ display: 'none' }}
+            onChange={aoEscolherCadastros}
+          />
+          <button
+            className="botao"
+            onClick={() => inputCadastros.current?.click()}
+            disabled={importando}
+            title="Planilha do gabinete: cria coordenadores E cabos, com o deputado vinculado"
+          >
+            {importando && !previaCad && !previa ? 'Lendo…' : '📥 Importar planilha do gabinete'}
+          </button>
           <button
             className="botao"
             onClick={() => inputArquivo.current?.click()}
             disabled={importando}
+            title="Só coordenadores (colunas Nome, Telefone, Time)"
           >
-            {importando && !previa ? 'Lendo planilha…' : '📄 Importar planilha'}
+            {importando && !previa ? 'Lendo planilha…' : '📄 Só coordenadores'}
           </button>
           {!mostrarForm && (
             <button className="botao primario" onClick={() => setMostrarForm(true)}>
@@ -176,6 +232,66 @@ export default function Coordenadores() {
       </header>
 
       {aviso && <p className="aviso info">{aviso}</p>}
+
+      {/* Prévia da planilha do gabinete (coordenadores + cabos + vínculo). */}
+      {previaCad && (
+        <div className="cartao import-previa">
+          <h2>Prévia — {previaCad.arquivo}</h2>
+          <p className="import-resumo">
+            <strong>{previaCad.total}</strong> linha(s): {' '}
+            <strong>{previaCad.coordNovos}</strong> coordenador(es) e <strong>{previaCad.caboNovos}</strong> cabo(s) novo(s).{' '}
+            {(previaCad.coordExiste + previaCad.caboExiste) > 0 && (
+              <>{previaCad.coordExiste + previaCad.caboExiste} já existe(m) e será(ão) ignorado(s).</>
+            )}
+          </p>
+          {previaCad.deputados.length > 0 && (
+            <p className="import-times">
+              Deputado(s) vinculado(s): <strong>{previaCad.deputados.join(', ')}</strong>
+              {previaCad.timesNovos.length > 0 && <> · times novos: {previaCad.timesNovos.join(', ')}</>}
+            </p>
+          )}
+          <div className="import-tabela-caixa">
+            <table className="tabela">
+              <thead>
+                <tr><th>Situação</th><th>Função</th><th>Nome</th><th>Telefone</th><th>Bairro</th><th>Vínculo</th></tr>
+              </thead>
+              <tbody>
+                {previaCad.linhas.map((l, i) => (
+                  <tr key={i} className={l.status === 'existe' ? 'linha-ignorada' : ''}>
+                    <td className="nowrap">
+                      <span className={`status ${l.status === 'novo' ? 'confirmada' : 'realizada'}`}>
+                        {l.status === 'novo' ? 'novo' : 'já existe'}
+                      </span>
+                    </td>
+                    <td className="nowrap">{l.tipo === 'coordenador' ? '⭐ Coord.' : 'Cabo'}</td>
+                    <td>{l.nome}</td>
+                    <td className="nowrap">
+                      {l.telefone ? formatarTelefone(l.telefone)
+                        : <em style={{ color: '#9ca3af' }}>{l.telefoneOriginal || '—'}</em>}
+                    </td>
+                    <td className="nowrap">{l.bairro ?? <em style={{ color: '#9ca3af' }}>—</em>}</td>
+                    <td className="nowrap">
+                      {l.tipo === 'coordenador'
+                        ? (l.candidato ?? <em style={{ color: '#9ca3af' }}>—</em>)
+                        : <span style={{ color: '#6b7280' }}>{l.coordenador ?? '—'}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="acoes-form">
+            <button
+              className="botao primario"
+              onClick={confirmarCadastros}
+              disabled={importando || (previaCad.coordNovos + previaCad.caboNovos) === 0}
+            >
+              {importando ? 'Importando…' : `Confirmar (${previaCad.coordNovos + previaCad.caboNovos} novo${(previaCad.coordNovos + previaCad.caboNovos) === 1 ? '' : 's'})`}
+            </button>
+            <button className="botao" onClick={() => setPreviaCad(null)} disabled={importando}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       {/* Prévia da importação: o que seria gravado, com Confirmar/Cancelar. */}
       {previa && (

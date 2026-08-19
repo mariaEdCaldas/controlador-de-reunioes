@@ -10,6 +10,7 @@ import { coordenadoresRouter } from './routes/coordenadores.js';
 import { lembretesRouter } from './routes/lembretes.js';
 import { propostasRouter } from './routes/propostas.js';
 import { cabosRouter } from './routes/cabos.js';
+import { cadastrosRouter } from './routes/cadastros.js';
 import { authRouter } from './routes/auth.js';
 import { usuariosRouter } from './routes/usuarios.js';
 import { exigirLogin } from './auth.js';
@@ -64,6 +65,7 @@ app.use('/api/coordenadores', coordenadoresRouter);
 app.use('/api/lembretes', lembretesRouter);
 app.use('/api/propostas', propostasRouter);
 app.use('/api/cabos', cabosRouter);
+app.use('/api/cadastros', cadastrosRouter);
 
 app.use((req, res) => {
   res.status(404).json({ erro: 'Rota não encontrada.' });

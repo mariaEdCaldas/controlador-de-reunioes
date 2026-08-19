@@ -189,6 +189,22 @@ export const importarConfirmarPlanilha = (linhas) =>
     body: JSON.stringify({ linhas }),
   });
 
+// Importação da planilha do gabinete (coordenadores + cabos juntos, com o
+// deputado vinculado). Envia o arquivo cru; recebe a prévia sem gravar.
+export const importarPreviaCadastros = async (file) => {
+  const buffer = await file.arrayBuffer();
+  return pedir(
+    `/api/cadastros/importar/previa?arquivo=${encodeURIComponent(file.name)}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buffer }
+  );
+};
+
+export const importarConfirmarCadastros = (linhas) =>
+  pedir('/api/cadastros/importar/confirmar', {
+    method: 'POST',
+    body: JSON.stringify({ linhas }),
+  });
+
 // ---------- propostas de reunião ----------
 
 export const listarPropostas = () => pedir('/api/propostas');
