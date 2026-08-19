@@ -282,7 +282,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
           <div className="import-tabela-caixa">
             <table className="tabela">
               <thead>
-                <tr><th>Situação</th><th>Proponente</th><th>Liderança</th><th>Bairro</th><th>Data</th><th>Endereço</th></tr>
+                <tr><th>Situação</th><th>Coordenador</th><th>Liderança</th><th>Bairro</th><th>Data</th><th>Endereço</th></tr>
               </thead>
               <tbody>
                 {previaProp.linhas.map((l, i) => (
