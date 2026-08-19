@@ -243,6 +243,20 @@ export const mudarStatusProposta = (id, status) =>
 export const excluirProposta = (id) =>
   pedir(`/api/propostas/${id}`, { method: 'DELETE' });
 
+export const importarPreviaPropostas = async (file) => {
+  const buffer = await file.arrayBuffer();
+  return pedir(
+    `/api/propostas/importar/previa?arquivo=${encodeURIComponent(file.name)}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buffer }
+  );
+};
+
+export const importarConfirmarPropostas = (linhas) =>
+  pedir('/api/propostas/importar/confirmar', {
+    method: 'POST',
+    body: JSON.stringify({ linhas }),
+  });
+
 // ---------- cabos ----------
 
 export const listarCabos = ({ coordenadorId, timeId, semCoordenador } = {}) => {

@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom';
 import {
   listarPropostas, criarProposta, mudarStatusProposta, excluirProposta,
   listarRegioes, criarRegiao, listarCoordenadores, criarReuniao,
+  importarPreviaPropostas, importarConfirmarPropostas,
 } from './api.js';
 import { formatarData, formatarTelefone, brParaIso, mascaraData } from './regioes.js';
 import { CANDIDATOS } from './candidatos.js';
 import { SUGESTOES_BAIRRO, agruparPorRegiao, contagemPorRegiao } from './regioesCampoGrande.js';
-import { lerCsv, normCab } from './lerCsv.js';
 import Busca, { contemBusca } from './Busca.jsx';
 import CalendarioRegioes from './CalendarioRegioes.jsx';
 
@@ -59,6 +59,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
   const [filtroStatus, setFiltroStatus] = useState('ativas'); // ativas | todas | pendente | aprovada | recusada
   const [importando, setImportando] = useState(false);
   const [msgImport, setMsgImport] = useState('');
+  const [previaProp, setPreviaProp] = useState(null); // prévia da planilha de propostas
 
   function carregar() {
     return Promise.all([listarPropostas(), listarRegioes(), listarCoordenadores()])
@@ -126,83 +127,36 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
     }
   }
 
-  /**
-   * Importa um CSV de propostas (uma ficha por linha). Reaproveita o mesmo
-   * caminho da criação manual: resolve o bairro em região (cria se não existir),
-   * casa o coordenador pelo nome e cria a proposta. Roda no navegador de quem
-   * está logado — então grava no ambiente em que a pessoa está (produção).
-   */
-  async function importarCsv(e) {
+  // Lê a planilha de propostas no servidor (.xlsx ou .csv) e mostra a prévia.
+  async function aoEscolherPlanilha(e) {
     const file = e.target.files?.[0];
     e.target.value = ''; // permite reimportar o mesmo arquivo depois
     if (!file) return;
-
     setImportando(true);
     setMsgImport('');
     setErro('');
+    setPreviaProp(null);
     try {
-      const matriz = lerCsv(await file.text());
-      if (matriz.length < 2) throw new Error('A planilha está vazia ou só tem o cabeçalho.');
+      const p = await importarPreviaPropostas(file);
+      setPreviaProp({ ...p, arquivo: file.name });
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setImportando(false);
+    }
+  }
 
-      const cab = matriz[0].map(normCab);
-      const achar = (nomes) => cab.findIndex((c) => nomes.includes(c));
-      const iCoord = achar(['coordenador', 'coordenador responsavel', 'proponente', 'responsavel']);
-      const iTel = achar(['telefone', 'contato', 'whatsapp', 'celular', 'fone']);
-      const iCand = achar(['candidato', 'deputado', 'deputado federal parceiro', 'parceiro']);
-      const iBairro = achar(['bairro', 'regiao', 'bairro / regiao', 'bairro/regiao']);
-      const iEnd = achar(['endereco', 'local']);
-      const iData = achar(['data', 'data sugerida', 'data pretendida']);
-      const iHora = achar(['hora', 'horario']);
-      const iPub = achar(['publico', 'quantidade', 'quantidade de pessoas', 'pessoas', 'previsao']);
-      const iObs = achar(['observacoes', 'obs', 'lideranca']);
-      if (iCoord === -1 && iBairro === -1) {
-        throw new Error('Não achei as colunas. O cabeçalho precisa ter ao menos "Coordenador" e "Bairro".');
-      }
-
-      // Cache de regiões pelo nome, para não recriar a mesma várias vezes.
-      const cacheRegiao = new Map(regioes.map((r) => [r.nome.toLowerCase(), r]));
-      let ok = 0;
-      const problemas = [];
-
-      for (let i = 1; i < matriz.length; i++) {
-        const row = matriz[i];
-        if (!row || row.every((c) => !String(c).trim())) continue;
-        const cel = (idx) => (idx === -1 ? '' : String(row[idx] ?? '').trim());
-        try {
-          const bairro = cel(iBairro) || 'A definir';
-          let reg = cacheRegiao.get(bairro.toLowerCase());
-          if (!reg) { reg = await criarRegiao(bairro); cacheRegiao.set(bairro.toLowerCase(), reg); }
-
-          const coord = coordenadores.find(
-            (c) => c.nome.toLowerCase() === cel(iCoord).toLowerCase()
-          );
-          const dataIso = cel(iData) ? brParaIso(cel(iData)) : '';
-          const hora = cel(iHora);
-          const horaOk = /^\d{1,2}:\d{2}$/.test(hora) ? hora.padStart(5, '0') : null;
-          const pub = (cel(iPub).match(/\d+/) || [])[0];
-
-          await criarProposta({
-            proponente: cel(iCoord) || cel(iObs) || 'A definir',
-            coordenador_id: coord ? coord.id : null,
-            telefone: cel(iTel),
-            candidato: cel(iCand),
-            regiao_id: reg.id,
-            endereco: cel(iEnd),
-            publico: pub ? Number(pub) : null,
-            data_sugerida: dataIso || null,
-            hora: horaOk,
-            observacoes: cel(iObs),
-          });
-          ok++;
-        } catch (err) {
-          problemas.push(`Linha ${i + 1}: ${err.message}`);
-        }
-      }
-
+  async function confirmarPropostas() {
+    setImportando(true);
+    setErro('');
+    try {
+      const r = await importarConfirmarPropostas(previaProp.linhas);
+      setMsgImport(
+        `Importei ${r.propostas} proposta${r.propostas === 1 ? '' : 's'}.` +
+          (r.pulados ? ` ${r.pulados} repetida(s)/vazia(s) ignorada(s).` : '')
+      );
+      setPreviaProp(null);
       await carregar();
-      const resumo = `Importei ${ok} proposta${ok === 1 ? '' : 's'}.`
-        + (problemas.length ? ` ${problemas.length} com problema — ${problemas.slice(0, 3).join('; ')}` : '');
-      setMsgImport(resumo);
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -293,12 +247,12 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
         </div>
         {!mostrarForm && (
           <div className="cabecalho-acoes">
-            <label className={`botao ${importando ? 'desativado' : ''}`} title="Importar fichas de uma planilha .csv">
-              {importando ? 'Importando…' : '↑ Importar planilha'}
+            <label className={`botao ${importando ? 'desativado' : ''}`} title="Importar propostas de uma planilha .xlsx ou .csv">
+              {importando && !previaProp ? 'Lendo…' : '↑ Importar planilha'}
               <input
                 type="file"
-                accept=".csv,text/csv"
-                onChange={importarCsv}
+                accept=".xlsx,.csv"
+                onChange={aoEscolherPlanilha}
                 disabled={importando}
                 hidden
               />
@@ -315,6 +269,44 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
           {msgImport}{' '}
           <button className="link-inline" type="button" onClick={() => setMsgImport('')}>ok</button>
         </p>
+      )}
+
+      {previaProp && (
+        <div className="cartao import-previa">
+          <h2>Prévia — {previaProp.arquivo}</h2>
+          <p className="import-resumo">
+            <strong>{previaProp.total}</strong> linha(s): <strong>{previaProp.novos}</strong> nova(s)
+            {previaProp.repetidos > 0 && <> · {previaProp.repetidos} repetida(s), será(ão) ignorada(s)</>}.
+          </p>
+          <div className="import-tabela-caixa">
+            <table className="tabela">
+              <thead>
+                <tr><th>Situação</th><th>Proponente</th><th>Bairro</th><th>Data</th><th>Endereço</th></tr>
+              </thead>
+              <tbody>
+                {previaProp.linhas.map((l, i) => (
+                  <tr key={i} className={l.status === 'existe' ? 'linha-ignorada' : ''}>
+                    <td className="nowrap">
+                      <span className={`status ${l.status === 'novo' ? 'confirmada' : 'realizada'}`}>
+                        {l.status === 'novo' ? 'nova' : 'repetida'}
+                      </span>
+                    </td>
+                    <td>{l.proponente}</td>
+                    <td className="nowrap">{l.bairro}</td>
+                    <td className="nowrap">{l.data_sugerida ? formatarData(l.data_sugerida) : <em style={{ color: '#9ca3af' }}>—</em>}</td>
+                    <td>{l.endereco ?? <em style={{ color: '#9ca3af' }}>—</em>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="acoes-form">
+            <button className="botao primario" onClick={confirmarPropostas} disabled={importando || previaProp.novos === 0}>
+              {importando ? 'Importando…' : `Confirmar (${previaProp.novos} nova${previaProp.novos === 1 ? '' : 's'})`}
+            </button>
+            <button className="botao" onClick={() => setPreviaProp(null)} disabled={importando}>Cancelar</button>
+          </div>
+        </div>
       )}
 
       {mostrarForm && (

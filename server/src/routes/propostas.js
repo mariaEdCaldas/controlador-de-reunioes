@@ -1,7 +1,11 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { db } from '../db.js';
+import { norm } from '../importar-coordenadores.js';
+import { lerPlanilhaPropostas } from '../importar-propostas.js';
 
 export const propostasRouter = Router();
+
+const chaveProposta = (p) => `${norm(p.proponente)}|${p.data_sugerida || ''}|${norm(p.endereco)}`;
 
 const SELECT_BASE = `
   SELECT p.id, p.proponente, p.telefone, p.regiao_id, reg.nome AS regiao,
@@ -106,4 +110,101 @@ propostasRouter.delete('/:id', async (req, res) => {
 
   await db.prepare('DELETE FROM propostas WHERE id = ?').run(existe.id);
   res.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// Importar planilha de propostas (.xlsx/.csv): prévia (não grava) e confirmação.
+// ---------------------------------------------------------------------------
+
+propostasRouter.post(
+  '/importar/previa',
+  express.raw({ type: () => true, limit: '20mb' }),
+  async (req, res) => {
+    const buffer = req.body;
+    if (!buffer || !buffer.length) return res.status(400).json({ erro: 'Nenhum arquivo recebido.' });
+
+    const r = await lerPlanilhaPropostas(buffer, { nomeArquivo: req.query.arquivo || '' });
+    if (!r.ok) return res.status(400).json({ erro: r.erro });
+
+    const existentes = new Set(
+      (await db.prepare(
+        `SELECT p.proponente, p.data_sugerida, p.endereco FROM propostas p`
+      ).all()).map((p) => chaveProposta(p))
+    );
+
+    let novos = 0;
+    let repetidos = 0;
+    const linhas = r.linhas.map((l) => {
+      const existe = existentes.has(chaveProposta(l));
+      existe ? repetidos++ : novos++;
+      return { ...l, status: existe ? 'existe' : 'novo' };
+    });
+
+    res.json({ total: r.linhas.length, novos, repetidos, linhas });
+  }
+);
+
+propostasRouter.post('/importar/confirmar', async (req, res) => {
+  const linhas = Array.isArray(req.body?.linhas) ? req.body.linhas : null;
+  if (!linhas) return res.status(400).json({ erro: 'Nada para importar.' });
+
+  const resultado = await db.transacao(async (tx) => {
+    const regiaoIdPorNome = new Map(
+      (await tx.prepare('SELECT id, nome FROM regioes').all()).map((r) => [norm(r.nome), r.id])
+    );
+    const coordIdPorNome = new Map(
+      (await tx.prepare('SELECT id, nome FROM coordenadores').all()).map((c) => [norm(c.nome), c.id])
+    );
+    const existentes = new Set(
+      (await tx.prepare('SELECT proponente, data_sugerida, endereco FROM propostas').all())
+        .map((p) => chaveProposta(p))
+    );
+    const inserirRegiao = tx.prepare('INSERT INTO regioes (nome) VALUES (?)');
+    const inserirProposta = tx.prepare(
+      `INSERT INTO propostas
+         (proponente, telefone, regiao_id, coordenador_id, endereco, publico,
+          candidato, data_sugerida, hora, observacoes)
+       VALUES
+         (@proponente, @telefone, @regiao_id, @coordenador_id, @endereco, @publico,
+          @candidato, @data_sugerida, @hora, @observacoes)`
+    );
+
+    async function regiaoId(bairro) {
+      const nome = String(bairro || 'A definir').trim();
+      const chave = norm(nome);
+      if (!regiaoIdPorNome.has(chave)) {
+        const { lastInsertRowid } = await inserirRegiao.run(nome);
+        regiaoIdPorNome.set(chave, lastInsertRowid);
+      }
+      return regiaoIdPorNome.get(chave);
+    }
+
+    let propostas = 0;
+    let pulados = 0;
+    for (const l of linhas) {
+      const proponente = String(l?.proponente ?? '').trim();
+      if (!proponente) { pulados++; continue; }
+      const chave = chaveProposta({ proponente, data_sugerida: l?.data_sugerida, endereco: l?.endereco });
+      if (existentes.has(chave)) { pulados++; continue; }
+
+      const pub = l?.publico === '' || l?.publico == null ? null : Number(l.publico);
+      await inserirProposta.run({
+        proponente,
+        telefone: l?.telefone || null,
+        regiao_id: await regiaoId(l?.bairro),
+        coordenador_id: l?.coordenador ? (coordIdPorNome.get(norm(l.coordenador)) ?? null) : null,
+        endereco: l?.endereco || null,
+        publico: Number.isInteger(pub) && pub >= 0 ? pub : null,
+        candidato: l?.candidato || null,
+        data_sugerida: /^\d{4}-\d{2}-\d{2}$/.test(l?.data_sugerida || '') ? l.data_sugerida : null,
+        hora: /^([01]\d|2[0-3]):[0-5]\d$/.test(l?.hora || '') ? l.hora : null,
+        observacoes: l?.observacoes || null,
+      });
+      existentes.add(chave);
+      propostas++;
+    }
+    return { propostas, pulados };
+  });
+
+  res.json(resultado);
 });
