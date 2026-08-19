@@ -16,8 +16,24 @@ const NAV = [
   { id: 'lembretes', rotulo: 'Lembretes' },
 ];
 
+// Abas que faz sentido restaurar ao recarregar (a "nova" é um formulário passageiro).
+const ABAS_RESTAURAVEIS = new Set(['agenda', 'rodrigo', 'pessoas', 'lembretes', 'usuarios']);
+
 export default function App() {
-  const [aba, setAba] = useState('agenda');
+  const [aba, setAba] = useState(() => {
+    try {
+      const guardada = localStorage.getItem('aba');
+      return ABAS_RESTAURAVEIS.has(guardada) ? guardada : 'agenda';
+    } catch {
+      return 'agenda';
+    }
+  });
+
+  // Guarda a aba atual para restaurar depois do reload (menos a "nova").
+  useEffect(() => {
+    if (aba === 'nova') return;
+    try { localStorage.setItem('aba', aba); } catch { /* sem persistência, tudo bem */ }
+  }, [aba]);
   const [recarga, setRecarga] = useState(0);
   const [reuniaoInicial, setReuniaoInicial] = useState(null);
   const [semBanner, setSemBanner] = useState(false);

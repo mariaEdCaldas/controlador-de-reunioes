@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { usarPersistido } from './usarPersistido.js';
 import VisaoGeral from './VisaoGeral.jsx';
 import Coordenadores from './Coordenadores.jsx';
 import CoordenadoresPorRegiao from './CoordenadoresPorRegiao.jsx';
@@ -20,7 +20,7 @@ const SECOES = [
  * numa seção (aba interna) com o seu próprio cadastro.
  */
 export default function Pessoas() {
-  const [secao, setSecao] = useState('visao');
+  const [secao, setSecao] = usarPersistido('pessoas-secao', 'visao');
 
   return (
     <section>

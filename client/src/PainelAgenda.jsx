@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { usarPersistido } from './usarPersistido.js';
 import Agenda from './Agenda.jsx';
 import Historico from './Historico.jsx';
 import Propostas from './Propostas.jsx';
@@ -15,7 +15,7 @@ const SECOES = [
  * mesma ideia das seções dentro de "Pessoas".
  */
 export default function PainelAgenda({ aoNovaReuniao }) {
-  const [secao, setSecao] = useState('agenda');
+  const [secao, setSecao] = usarPersistido('painel-secao', 'agenda');
 
   return (
     <>
