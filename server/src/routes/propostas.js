@@ -10,8 +10,8 @@ const chaveProposta = (p) => `${norm(p.proponente)}|${p.data_sugerida || ''}|${n
 const SELECT_BASE = `
   SELECT p.id, p.proponente, p.telefone, p.regiao_id, reg.nome AS regiao,
          p.coordenador_id, c.nome AS coordenador_nome, c.telefone AS coordenador_telefone,
-         p.endereco, p.publico, p.candidato, p.data_sugerida, p.hora, p.observacoes,
-         p.status, p.criado_em
+         p.endereco, p.publico, p.candidato, p.data_sugerida, p.hora,
+         p.lideranca, p.observacoes, p.status, p.criado_em
     FROM propostas p
     JOIN regioes reg ON reg.id = p.regiao_id
     LEFT JOIN coordenadores c ON c.id = p.coordenador_id
@@ -62,6 +62,7 @@ async function validar(corpo) {
     candidato: String(corpo.candidato ?? '').trim() || null,
     data_sugerida: data || null,
     hora: hora || null,
+    lideranca: String(corpo.lideranca ?? '').trim() || null,
     observacoes: String(corpo.observacoes ?? '').trim() || null,
   };
 }
@@ -81,10 +82,10 @@ propostasRouter.post('/', async (req, res) => {
     .prepare(
       `INSERT INTO propostas
          (proponente, telefone, regiao_id, coordenador_id, endereco, publico,
-          candidato, data_sugerida, hora, observacoes)
+          candidato, data_sugerida, hora, lideranca, observacoes)
        VALUES
          (@proponente, @telefone, @regiao_id, @coordenador_id, @endereco, @publico,
-          @candidato, @data_sugerida, @hora, @observacoes)`
+          @candidato, @data_sugerida, @hora, @lideranca, @observacoes)`
     )
     .run(campos);
 
@@ -163,10 +164,10 @@ propostasRouter.post('/importar/confirmar', async (req, res) => {
     const inserirProposta = tx.prepare(
       `INSERT INTO propostas
          (proponente, telefone, regiao_id, coordenador_id, endereco, publico,
-          candidato, data_sugerida, hora, observacoes)
+          candidato, data_sugerida, hora, lideranca, observacoes)
        VALUES
          (@proponente, @telefone, @regiao_id, @coordenador_id, @endereco, @publico,
-          @candidato, @data_sugerida, @hora, @observacoes)`
+          @candidato, @data_sugerida, @hora, @lideranca, @observacoes)`
     );
 
     async function regiaoId(bairro) {
@@ -198,6 +199,7 @@ propostasRouter.post('/importar/confirmar', async (req, res) => {
         candidato: l?.candidato || null,
         data_sugerida: /^\d{4}-\d{2}-\d{2}$/.test(l?.data_sugerida || '') ? l.data_sugerida : null,
         hora: /^([01]\d|2[0-3]):[0-5]\d$/.test(l?.hora || '') ? l.hora : null,
+        lideranca: l?.lideranca || null,
         observacoes: l?.observacoes || null,
       });
       existentes.add(chave);

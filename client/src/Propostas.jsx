@@ -15,7 +15,7 @@ const HORAS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = ['00', '15', '30', '45'];
 
 const VAZIO = {
-  coordenador: '', telefone: '', candidato: '', regiao: '',
+  coordenador: '', lideranca: '', telefone: '', candidato: '', regiao: '',
   endereco: '', publico: '', data: '', hora: '', observacoes: '',
 };
 
@@ -116,6 +116,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
         publico: form.publico === '' ? null : Number(form.publico),
         data_sugerida: dataIso || null,
         hora: form.hora || null,
+        lideranca: form.lideranca,
         observacoes: form.observacoes,
       });
       setForm(VAZIO);
@@ -281,7 +282,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
           <div className="import-tabela-caixa">
             <table className="tabela">
               <thead>
-                <tr><th>Situação</th><th>Proponente</th><th>Bairro</th><th>Data</th><th>Endereço</th></tr>
+                <tr><th>Situação</th><th>Proponente</th><th>Liderança</th><th>Bairro</th><th>Data</th><th>Endereço</th></tr>
               </thead>
               <tbody>
                 {previaProp.linhas.map((l, i) => (
@@ -292,6 +293,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
                       </span>
                     </td>
                     <td>{l.proponente}</td>
+                    <td className="nowrap">{l.lideranca ?? <em style={{ color: '#9ca3af' }}>—</em>}</td>
                     <td className="nowrap">{l.bairro}</td>
                     <td className="nowrap">{l.data_sugerida ? formatarData(l.data_sugerida) : <em style={{ color: '#9ca3af' }}>—</em>}</td>
                     <td>{l.endereco ?? <em style={{ color: '#9ca3af' }}>—</em>}</td>
@@ -331,6 +333,14 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
               {coordSelecionado && (
                 <small className="dica">Traz o telefone do coordenador (dá para editar).</small>
               )}
+            </label>
+            <label className="campo">
+              <span>Liderança</span>
+              <input
+                value={form.lideranca}
+                onChange={(e) => setCampo('lideranca', e.target.value)}
+                placeholder="Quem puxa a reunião na comunidade"
+              />
             </label>
             <label className="campo">
               <span>Telefone (WhatsApp)</span>
@@ -607,6 +617,11 @@ function PropostaCard({ proposta: p, aoAprovar, aoStatus, aoExcluir }) {
       <div className="proposta-topo">
         <div className="proposta-ident">
           <div className="item-nome">{p.proponente}</div>
+          {p.lideranca && (
+            <div className="proposta-lideranca" style={{ fontSize: '12.5px', color: '#6b7280' }}>
+              Liderança: {p.lideranca}
+            </div>
+          )}
           <div className="proposta-meta">
             {p.candidato && <span className="candidato-tag">{p.candidato}</span>}
             {p.publico != null && <span className="proposta-publico">{p.publico} pessoas</span>}

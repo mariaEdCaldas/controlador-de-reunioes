@@ -132,12 +132,12 @@ export async function lerPlanilhaPropostas(buffer, { nomeArquivo = '' } = {}) {
       : null;
     const pub = (pega(linha, col.publico).match(/\d+/) || [])[0];
     const bairro = pega(linha, col.bairro) || bairroDoEndereco(endereco) || 'A definir';
-    const obs = [lider && coord ? `Liderança: ${lider}` : '', pega(linha, col.obs)]
-      .filter(Boolean).join(' — ');
 
     linhas.push({
       proponente: proponente || 'A definir',
       coordenador: coord || null,
+      // Liderança é campo próprio; só vira proponente quando não há coordenador.
+      lideranca: coord ? (lider || null) : null,
       telefone: pega(linha, col.telefone) || null,
       candidato: pega(linha, col.candidato) || null,
       bairro,
@@ -145,7 +145,7 @@ export async function lerPlanilhaPropostas(buffer, { nomeArquivo = '' } = {}) {
       data_sugerida: paraIso(pega(linha, col.data)) || null,
       hora: horaOk,
       publico: pub ? Number(pub) : null,
-      observacoes: obs || null,
+      observacoes: pega(linha, col.obs) || null,
     });
   }
 
