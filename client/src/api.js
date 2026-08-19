@@ -19,16 +19,38 @@ class ErroApi extends Error {
   }
 }
 
+const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Pode repetir automaticamente quando a rede falha? Só para chamadas seguras de
+ * repetir: leituras (GET) e as rotas de login. É o que salva o "servidor dormindo"
+ * do plano gratuito (cold start ~30-50s): em vez de a tela vir vazia, ele espera
+ * o servidor acordar. Não repete gravações (POST/PATCH/DELETE de dados) para não
+ * arriscar duplicar algo que talvez tenha chegado ao servidor.
+ */
+function podeRepetir(url, opcoes) {
+  const metodo = (opcoes.method || 'GET').toUpperCase();
+  return metodo === 'GET' || url.startsWith('/api/auth/');
+}
+
 async function pedir(url, opcoes = {}) {
   const headers = { 'Content-Type': 'application/json', ...(opcoes.headers || {}) };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
+  // Espera crescente entre tentativas (~42s no total) para cobrir o cold start.
+  const esperas = podeRepetir(url, opcoes) ? [2000, 4000, 6000, 8000, 10000, 12000] : [];
   let resposta;
-  try {
-    resposta = await fetch(BASE_API + url, { ...opcoes, headers });
-  } catch {
-    throw new ErroApi('Sem conexão com o servidor. Ele está rodando?');
+  for (let tentativa = 0; ; tentativa++) {
+    try {
+      resposta = await fetch(BASE_API + url, { ...opcoes, headers });
+      break;
+    } catch {
+      if (tentativa >= esperas.length) {
+        throw new ErroApi('Sem conexão com o servidor. Ele está rodando?');
+      }
+      await dormir(esperas[tentativa]);
+    }
   }
 
   const corpo = await resposta.json().catch(() => ({}));
