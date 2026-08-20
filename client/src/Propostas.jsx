@@ -11,6 +11,7 @@ import { SUGESTOES_BAIRRO, agruparPorRegiao, contagemPorRegiao } from './regioes
 import Busca, { contemBusca } from './Busca.jsx';
 import CalendarioRegioes from './CalendarioRegioes.jsx';
 import FiltroPeriodo, { filtrarPeriodo } from './FiltroPeriodo.jsx';
+import FiltroCandidato, { filtrarCandidato } from './FiltroCandidato.jsx';
 
 const HORAS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTOS = ['00', '15', '30', '45'];
@@ -60,6 +61,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('ativas'); // ativas | todas | pendente | aprovada | recusada
   const [periodo, setPeriodo] = useState({ modo: 'todas', ini: '', fim: '' });
+  const [candidato, setCandidato] = useState('');
   const [importando, setImportando] = useState(false);
   const [msgImport, setMsgImport] = useState('');
   const [previaProp, setPreviaProp] = useState(null); // prévia da planilha de propostas
@@ -255,7 +257,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
     if (filtroStatus === 'ativas') return p.status !== 'recusada';
     return p.status === filtroStatus;
   });
-  const visiveis = filtrarPeriodo(porStatus, periodo, (p) => p.data_sugerida).filter((p) =>
+  const visiveis = filtrarCandidato(filtrarPeriodo(porStatus, periodo, (p) => p.data_sugerida), candidato).filter((p) =>
     contemBusca(
       `${p.proponente} ${p.regiao ?? ''} ${p.endereco ?? ''} ${p.candidato ?? ''}`,
       busca
@@ -506,6 +508,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
           </select>
         </label>
         <FiltroPeriodo periodo={periodo} aoMudar={setPeriodo} />
+        <FiltroCandidato valor={candidato} aoMudar={setCandidato} />
       </div>
 
       {erro && <p className="aviso erro">{erro}</p>}

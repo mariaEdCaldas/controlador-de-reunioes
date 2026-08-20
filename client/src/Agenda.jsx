@@ -11,6 +11,7 @@ import { compartilharFolhaWhatsapp } from './compartilharFolha.jsx';
 import CalendarioRegioes from './CalendarioRegioes.jsx';
 import ExportarAgenda from './ExportarAgenda.jsx';
 import FiltroPeriodo, { filtrarPeriodo } from './FiltroPeriodo.jsx';
+import FiltroCandidato, { filtrarCandidato } from './FiltroCandidato.jsx';
 
 /** Ícone do WhatsApp por imagem (/icones/whatsapp.png); cai no emoji se faltar. */
 function IconeWhatsapp() {
@@ -75,6 +76,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
   const [busca, setBusca] = useState('');
   const [exportando, setExportando] = useState(false); // modal de exportar agenda
   const [periodo, setPeriodo] = useState({ modo: 'todas', ini: '', fim: '' });
+  const [candidato, setCandidato] = useState('');
 
   // Gera a folha da reunião como imagem e abre o compartilhamento (WhatsApp).
   async function compartilhar(reuniao) {
@@ -153,7 +155,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
     return aPass ? -cmp : cmp;
   }
 
-  const visiveis = filtrarPeriodo(reunioes, periodo)
+  const visiveis = filtrarCandidato(filtrarPeriodo(reunioes, periodo), candidato)
     .filter((r) =>
       contemBusca(
         `${r.nome ?? ''} ${r.local ?? ''} ${r.endereco ?? ''} ${r.candidato ?? ''} ${r.coordenador_nome ?? ''} ${r.regiao ?? ''}`,
@@ -211,6 +213,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
       <div className="barra-filtros">
         <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar por nome, endereço, candidato…" />
         <FiltroPeriodo periodo={periodo} aoMudar={setPeriodo} />
+        <FiltroCandidato valor={candidato} aoMudar={setCandidato} />
       </div>
 
       {erro && <p className="aviso erro">{erro}</p>}
