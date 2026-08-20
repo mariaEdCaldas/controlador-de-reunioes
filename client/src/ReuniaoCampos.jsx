@@ -131,16 +131,26 @@ export default function ReuniaoCampos({
         <label className="campo">
           <span>Palestrante</span>
           <input
-            list="lista-palestrantes"
             value={form.palestrante ?? ''}
             onChange={(e) => setCampo('palestrante', e.target.value)}
             placeholder="Quem vai palestrar (deixe vazio se não definido)"
+            disabled={Boolean(form.presenca_deputado)}
           />
-          <datalist id="lista-palestrantes">
-            <option value="Paulo Corrêa" />
-          </datalist>
-          <small className="dica">Se for o Paulo Corrêa, o título fica grifado na agenda exportada.</small>
         </label>
+      </div>
+
+      <div className="linha">
+        <label className="check-som">
+          <input
+            type="checkbox"
+            checked={Boolean(form.presenca_deputado)}
+            onChange={(e) => setCampo('presenca_deputado', e.target.checked)}
+          />
+          Presença do deputado (Paulo Corrêa)
+        </label>
+        <small className="dica" style={{ alignSelf: 'center' }}>
+          Marcado: sai “Presença Dep. Paulo Corrêa” e grifa o título na agenda. Desmarcado: vale o palestrante.
+        </small>
       </div>
 
       <div className="linha">

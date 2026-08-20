@@ -5,7 +5,7 @@ export const reunioesRouter = Router();
 
 const SELECT_BASE = `
   SELECT r.id, r.local, r.endereco, r.data, r.hora, r.status,
-         r.nome, r.candidato, r.qtd_cadeiras, r.tem_som,
+         r.nome, r.candidato, r.qtd_cadeiras, r.tem_som, r.presenca_deputado,
          r.responsavel, r.responsavel_telefone, r.palestrante,
          r.regiao_id, reg.nome AS regiao,
          r.coordenador_id, c.nome AS coordenador_nome, c.telefone AS coordenador_telefone,
@@ -63,6 +63,7 @@ async function validarNova(corpo) {
   }
 
   const temSom = corpo.tem_som ? 1 : 0;
+  const presencaDeputado = corpo.presenca_deputado ? 1 : 0;
 
   if (Object.keys(erros).length > 0) return { ok: false, erros };
   return {
@@ -70,6 +71,7 @@ async function validarNova(corpo) {
     dados: {
       nome, local, endereco, regiao_id: regiaoId, data, hora,
       candidato, coordenador_id: coordenadorId, qtd_cadeiras: qtdCadeiras, tem_som: temSom,
+      presenca_deputado: presencaDeputado,
       responsavel: String(corpo.responsavel ?? '').trim() || null,
       responsavel_telefone: String(corpo.responsavel_telefone ?? '').trim() || null,
       palestrante: String(corpo.palestrante ?? '').trim() || null,
@@ -85,10 +87,10 @@ reunioesRouter.post('/', async (req, res) => {
   const { lastInsertRowid } = await db
     .prepare(
       `INSERT INTO reunioes (nome, local, endereco, regiao_id, data, hora, status,
-                             candidato, coordenador_id, qtd_cadeiras, tem_som,
+                             candidato, coordenador_id, qtd_cadeiras, tem_som, presenca_deputado,
                              responsavel, responsavel_telefone, palestrante)
        VALUES (@nome, @local, @endereco, @regiao_id, @data, @hora, 'a_confirmar',
-               @candidato, @coordenador_id, @qtd_cadeiras, @tem_som,
+               @candidato, @coordenador_id, @qtd_cadeiras, @tem_som, @presenca_deputado,
                @responsavel, @responsavel_telefone, @palestrante)`
     )
     .run(v.dados);
@@ -113,6 +115,7 @@ reunioesRouter.patch('/:id', async (req, res) => {
         SET nome = @nome, endereco = @endereco, regiao_id = @regiao_id,
             data = @data, hora = @hora, candidato = @candidato,
             coordenador_id = @coordenador_id, qtd_cadeiras = @qtd_cadeiras, tem_som = @tem_som,
+            presenca_deputado = @presenca_deputado,
             responsavel = @responsavel, responsavel_telefone = @responsavel_telefone,
             palestrante = @palestrante
       WHERE id = @id`

@@ -71,13 +71,12 @@ function partesReuniao(r, comEstrutura) {
   }
   if (r.endereco) linhas.push(['Local: ', `${r.endereco}, Campo Grande - MS`]);
   linhas.push(['Link: ', mapsLink(r.endereco || ''), 'link']);
-  // Presença: só sai a linha quando há palestrante definido. Se o palestrante for
-  // o próprio Paulo Corrêa, a linha vira "Presença Dep. Paulo Corrêa" e o título
-  // fica grifado. Qualquer outro palestrante não grifa; sem palestrante, sem linha.
+  // Presença: se a reunião tem "presença do deputado" marcada, sai "Presença Dep.
+  // Paulo Corrêa" e o título fica grifado. Senão, vale o palestrante (se houver);
+  // sem palestrante, sem linha.
   const palestrante = r.palestrante || r.titular_nome || '';
-  const ehPaulo = palestrante.toLowerCase().includes('paulo corr');
   let destaque = false;
-  if (ehPaulo) {
+  if (r.presenca_deputado) {
     linhas.push(['', 'Presença Dep. Paulo Corrêa', 'presenca']);
     destaque = true;
   } else if (palestrante) {

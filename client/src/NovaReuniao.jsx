@@ -6,7 +6,7 @@ import ReuniaoCampos from './ReuniaoCampos.jsx';
 const VAZIO = {
   nome: '', candidato: '', regiao: '', endereco: '',
   data: '', hora: '', coordenador: '', responsavel: '', responsavel_telefone: '',
-  palestrante: '', qtd_cadeiras: '', tem_som: true,
+  palestrante: '', presenca_deputado: false, qtd_cadeiras: '', tem_som: true,
 };
 
 /** Junta coordenadores e cabos numa só lista de pessoas (para o Responsável). */
@@ -115,6 +115,7 @@ export default function NovaReuniao({ aoConcluir, inicial }) {
         responsavel: form.responsavel,
         responsavel_telefone: form.responsavel_telefone,
         palestrante: form.palestrante,
+        presenca_deputado: form.presenca_deputado,
       });
       // Salvou: volta direto para a agenda (a reunião já aparece lá). A alocação
       // de palestrante fica só no botão do card, quando/se quiserem.

@@ -23,6 +23,7 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
     responsavel_telefone: reuniao.responsavel_telefone
       ? formatarTelefone(reuniao.responsavel_telefone) : '',
     palestrante: reuniao.palestrante ?? '',
+    presenca_deputado: Boolean(reuniao.presenca_deputado),
     qtd_cadeiras: reuniao.qtd_cadeiras ?? '',
     tem_som: Boolean(reuniao.tem_som),
   });
@@ -117,6 +118,7 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
         responsavel: form.responsavel,
         responsavel_telefone: form.responsavel_telefone,
         palestrante: form.palestrante,
+        presenca_deputado: form.presenca_deputado,
       });
       aoSalvar(atualizada);
     } catch (erro) {
