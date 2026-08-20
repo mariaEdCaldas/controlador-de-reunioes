@@ -10,6 +10,7 @@ import { agruparPorRegiao, contagemPorRegiao } from './regioesCampoGrande.js';
 import { compartilharFolhaWhatsapp } from './compartilharFolha.jsx';
 import CalendarioRegioes from './CalendarioRegioes.jsx';
 import ExportarAgenda from './ExportarAgenda.jsx';
+import FiltroPeriodo, { filtrarPeriodo } from './FiltroPeriodo.jsx';
 
 /** Ícone do WhatsApp por imagem (/icones/whatsapp.png); cai no emoji se faltar. */
 function IconeWhatsapp() {
@@ -73,6 +74,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
   const [compartilhandoId, setCompartilhandoId] = useState(null); // gerando imagem
   const [busca, setBusca] = useState('');
   const [exportando, setExportando] = useState(false); // modal de exportar agenda
+  const [periodo, setPeriodo] = useState({ modo: 'todas', ini: '', fim: '' });
 
   // Gera a folha da reunião como imagem e abre o compartilhamento (WhatsApp).
   async function compartilhar(reuniao) {
@@ -151,7 +153,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
     return aPass ? -cmp : cmp;
   }
 
-  const visiveis = reunioes
+  const visiveis = filtrarPeriodo(reunioes, periodo)
     .filter((r) =>
       contemBusca(
         `${r.nome ?? ''} ${r.local ?? ''} ${r.endereco ?? ''} ${r.candidato ?? ''} ${r.coordenador_nome ?? ''} ${r.regiao ?? ''}`,
@@ -159,9 +161,6 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
       )
     )
     .sort(ordenarProximas);
-
-  // Calendário da Agenda: só as reuniões CONFIRMADAS (exclui as "a confirmar").
-  const confirmadas = visiveis.filter((r) => r.status === 'confirmada' || r.status === 'realizada');
 
   // Um só jeito de montar o card, usado tanto na lista corrida quanto agrupada.
   const renderItem = (r) => (
@@ -209,7 +208,10 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
         </div>
       </header>
 
-      <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar por nome, endereço, candidato…" />
+      <div className="barra-filtros">
+        <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar por nome, endereço, candidato…" />
+        <FiltroPeriodo periodo={periodo} aoMudar={setPeriodo} />
+      </div>
 
       {erro && <p className="aviso erro">{erro}</p>}
 
@@ -242,11 +244,11 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
         </>
       ) : (
         <>
-          {/* Calendário só com as reuniões confirmadas — sempre visível. */}
+          {/* Calendário da agenda — pinta cada dia pela região das reuniões. */}
           <CalendarioRegioes
-            reunioes={confirmadas}
-            titulo="Calendário — reuniões confirmadas"
-            sub="mostra apenas as reuniões já confirmadas"
+            reunioes={visiveis}
+            titulo="Calendário da agenda"
+            sub="cada dia se pinta com a região das reuniões marcadas"
           />
           {reunioes.length === 0 ? (
             <p className="vazio">Nenhuma reunião cadastrada ainda.</p>

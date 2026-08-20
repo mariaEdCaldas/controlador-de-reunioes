@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { listarReunioes } from './api.js';
 import { corDaRegiao, formatarData } from './regioes.js';
 import Busca, { contemBusca } from './Busca.jsx';
+import FiltroPeriodo, { filtrarPeriodo } from './FiltroPeriodo.jsx';
 
 /**
  * RN-10: só as reuniões já realizadas, em tabela.
@@ -15,6 +16,7 @@ export default function Historico() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [busca, setBusca] = useState('');
+  const [periodo, setPeriodo] = useState({ modo: 'todas', ini: '', fim: '' });
 
   useEffect(() => {
     listarReunioes({ status: 'realizada' })
@@ -23,7 +25,7 @@ export default function Historico() {
       .finally(() => setCarregando(false));
   }, []);
 
-  const visiveis = reunioes.filter((r) =>
+  const visiveis = filtrarPeriodo(reunioes, periodo).filter((r) =>
     contemBusca(`${r.nome ?? ''} ${r.local ?? ''} ${r.endereco ?? ''} ${r.regiao ?? ''} ${r.titular_nome ?? ''}`, busca)
   );
   const totalPresentes = visiveis.reduce((soma, r) => soma + (r.presentes ?? 0), 0);
@@ -38,7 +40,10 @@ export default function Historico() {
       </header>
 
       {reunioes.length > 0 && (
-        <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar no histórico…" />
+        <div className="barra-filtros">
+          <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar no histórico…" />
+          <FiltroPeriodo periodo={periodo} aoMudar={setPeriodo} />
+        </div>
       )}
 
       {erro && <p className="aviso erro">{erro}</p>}

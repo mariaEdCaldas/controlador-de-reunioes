@@ -697,6 +697,11 @@ input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--er
    ========================================================================= */
 .barra-filtros { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .barra-filtros .busca { margin-bottom: 0; }
+.barra-filtros .filtro, .filtro-periodo .filtro { margin-bottom: 0; }
+.filtro-periodo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filtro-periodo-datas { display: flex; align-items: center; gap: 6px; }
+.filtro-periodo-datas input[type="date"] { font: inherit; padding: 6px 8px; }
+.filtro-periodo-datas .ate { color: var(--cinza); font-size: 13px; }
 
 /* Sub-bloco por bairro dentro de uma região. Quando há 2+ propostas no mesmo
    bairro, o bloco ganha destaque: é uma possível JUNÇÃO de reuniões. */
