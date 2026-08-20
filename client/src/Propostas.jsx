@@ -222,6 +222,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
         coordenador_id: p.coordenador_id ?? null,
         qtd_cadeiras: p.publico != null ? p.publico : null,
         tem_som: som,
+        responsavel: p.lideranca || p.proponente || '',
       });
       await mudarStatusProposta(p.id, 'aprovada');
       setAprovando(null);
@@ -241,6 +242,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
       data: p.data_sugerida ? formatarData(p.data_sugerida) : '',
       hora: p.hora || '',
       coordenador: p.coordenador_nome || p.proponente || '',
+      responsavel: p.lideranca || p.proponente || '',
       qtd_cadeiras: p.publico != null ? String(p.publico) : '',
       tem_som: true,
     });

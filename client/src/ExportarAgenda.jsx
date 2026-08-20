@@ -52,9 +52,15 @@ function partesReuniao(r, comEstrutura) {
     (reg ? ` (${reg})` : '');
 
   const linhas = [];
-  if (r.coordenador_nome) {
-    const tel = r.coordenador_telefone ? ` - ${formatarTelefone(r.coordenador_telefone)}` : '';
-    linhas.push(['Coordenação/Responsável: ', `${r.coordenador_nome}${tel}`]);
+  const tel = r.coordenador_telefone ? ` - ${formatarTelefone(r.coordenador_telefone)}` : '';
+  const coord = r.coordenador_nome || '';
+  const resp = r.responsavel || '';
+  if (coord && resp && resp.toLowerCase() !== coord.toLowerCase()) {
+    // Coordenação e Responsável diferentes: duas linhas (o telefone vai no responsável).
+    linhas.push(['Coordenação: ', coord]);
+    linhas.push(['Responsável: ', `${resp}${tel}`]);
+  } else if (coord || resp) {
+    linhas.push(['Coordenação/Responsável: ', `${coord || resp}${tel}`]);
   }
   if (comEstrutura && (r.qtd_cadeiras != null || r.tem_som)) {
     const partes = [];
@@ -64,9 +70,10 @@ function partesReuniao(r, comEstrutura) {
   }
   if (r.endereco) linhas.push(['Local: ', `${r.endereco}, Campo Grande - MS`]);
   linhas.push(['Link: ', mapsLink(r.endereco || ''), 'link']);
+  const palestrante = r.palestrante || r.titular_nome;
   linhas.push([
     '',
-    r.titular_nome ? `Presença de palestrante - ${r.titular_nome}` : 'Presença Dep. Paulo Corrêa',
+    palestrante ? `Presença de palestrante - ${palestrante}` : 'Presença Dep. Paulo Corrêa',
     'presenca',
   ]);
   return { titulo, linhas };

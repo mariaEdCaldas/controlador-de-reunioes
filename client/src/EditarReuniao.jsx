@@ -19,6 +19,8 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
     data: formatarData(reuniao.data ?? ''), // ISO -> dd/mm/aaaa para o campo
     hora: reuniao.hora ?? '',
     coordenador: reuniao.coordenador_nome ?? '',
+    responsavel: reuniao.responsavel ?? '',
+    palestrante: reuniao.palestrante ?? '',
     qtd_cadeiras: reuniao.qtd_cadeiras ?? '',
     tem_som: Boolean(reuniao.tem_som),
   });
@@ -46,10 +48,11 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
     const match = coordenadores.find(
       (c) => c.nome.toLowerCase() === valor.trim().toLowerCase()
     );
-    // Puxa o deputado vinculado ao coordenador (editável) ao trocar de contato.
+    // Puxa o deputado vinculado e pré-preenche o Responsável (ambos editáveis).
     setForm((f) => ({
       ...f,
       coordenador: valor,
+      responsavel: valor,
       ...(match?.candidato ? { candidato: match.candidato } : {}),
     }));
     setCoordSelecionado(match ?? null);
@@ -92,6 +95,8 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
         coordenador_id: coord ? coord.id : null,
         qtd_cadeiras: form.qtd_cadeiras === '' ? null : Number(form.qtd_cadeiras),
         tem_som: form.tem_som,
+        responsavel: form.responsavel,
+        palestrante: form.palestrante,
       });
       aoSalvar(atualizada);
     } catch (erro) {

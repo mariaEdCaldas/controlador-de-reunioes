@@ -83,6 +83,18 @@ export default function ReuniaoCampos({
         </label>
 
         <label className="campo">
+          <span>Responsável</span>
+          <input
+            value={form.responsavel ?? ''}
+            onChange={(e) => setCampo('responsavel', e.target.value)}
+            placeholder="Quem recebe/puxa a reunião"
+          />
+          <small className="dica">Preenche com o coordenador ao escolher — dá para trocar.</small>
+        </label>
+      </div>
+
+      <div className="linha">
+        <label className="campo">
           <span>Bairro / região <b aria-hidden="true">*</b></span>
           <input
             list="lista-regioes"
@@ -97,6 +109,15 @@ export default function ReuniaoCampos({
             ))}
           </datalist>
           {erros.regiao && <small className="erro-campo">{erros.regiao}</small>}
+        </label>
+
+        <label className="campo">
+          <span>Palestrante</span>
+          <input
+            value={form.palestrante ?? ''}
+            onChange={(e) => setCampo('palestrante', e.target.value)}
+            placeholder="Quem vai palestrar (ou o próprio deputado)"
+          />
         </label>
       </div>
 

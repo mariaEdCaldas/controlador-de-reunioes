@@ -5,7 +5,8 @@ import ReuniaoCampos from './ReuniaoCampos.jsx';
 
 const VAZIO = {
   nome: '', candidato: '', regiao: '', endereco: '',
-  data: '', hora: '', coordenador: '', qtd_cadeiras: '', tem_som: true,
+  data: '', hora: '', coordenador: '', responsavel: '', palestrante: '',
+  qtd_cadeiras: '', tem_som: true,
 };
 
 /**
@@ -40,11 +41,12 @@ export default function NovaReuniao({ aoConcluir, inicial }) {
     const match = coordenadores.find(
       (c) => c.nome.toLowerCase() === valor.trim().toLowerCase()
     );
-    // Se o coordenador tem um deputado vinculado (pelo time), já entra no campo
-    // "Candidatos" — mas segue editável (a pessoa pode trocar).
+    // Ao escolher o coordenador: o deputado vinculado entra no campo "Candidatos"
+    // e o "Responsável" é pré-preenchido com o nome dele — ambos editáveis.
     setForm((f) => ({
       ...f,
       coordenador: valor,
+      responsavel: valor,
       ...(match?.candidato ? { candidato: match.candidato } : {}),
     }));
     setCoordSelecionado(match ?? null);
@@ -87,6 +89,8 @@ export default function NovaReuniao({ aoConcluir, inicial }) {
         coordenador_id: coord ? coord.id : null,
         qtd_cadeiras: form.qtd_cadeiras === '' ? null : Number(form.qtd_cadeiras),
         tem_som: form.tem_som,
+        responsavel: form.responsavel,
+        palestrante: form.palestrante,
       });
       // Salvou: volta direto para a agenda (a reunião já aparece lá). A alocação
       // de palestrante fica só no botão do card, quando/se quiserem.
