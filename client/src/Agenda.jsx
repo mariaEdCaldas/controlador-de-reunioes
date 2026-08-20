@@ -340,11 +340,17 @@ function ItemReuniao({ reuniao: r, aberto, aoAbrir, aoAlternarItem, aoImprimir, 
             </span>
           </div>
         )}
-        {(r.titular_nome || r.reserva_nome) && (
+        {r.responsavel && (
+          <div className="det">
+            <span className="det-rot">Responsável</span>
+            <span>{r.responsavel}</span>
+          </div>
+        )}
+        {(r.palestrante || r.titular_nome || r.reserva_nome) && (
           <div className="det">
             <span className="det-rot">Palestrante</span>
             <span>
-              {r.titular_nome ?? <em className="pendente">a definir</em>}
+              {r.palestrante || r.titular_nome || <em className="pendente">a definir</em>}
               {r.reserva_nome && <span className="det-reserva"> · reserva: {r.reserva_nome}</span>}
             </span>
           </div>
