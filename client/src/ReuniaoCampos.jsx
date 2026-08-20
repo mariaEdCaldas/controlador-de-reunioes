@@ -15,6 +15,7 @@ const MINUTOS = ['00', '15', '30', '45'];
  */
 export default function ReuniaoCampos({
   form, erros, regioes, coordenadores, coordSelecionado, setCampo, mudarCoordenador,
+  pessoas = [], mudarResponsavel,
 }) {
   const [horaSel = '', minSel = ''] = String(form.hora ?? '').split(':');
 
@@ -85,11 +86,27 @@ export default function ReuniaoCampos({
         <label className="campo">
           <span>Responsável</span>
           <input
+            list="lista-pessoas"
             value={form.responsavel ?? ''}
-            onChange={(e) => setCampo('responsavel', e.target.value)}
-            placeholder="Quem recebe/puxa a reunião"
+            onChange={(e) => (mudarResponsavel ? mudarResponsavel(e) : setCampo('responsavel', e.target.value))}
+            placeholder="Coordenador ou cabo (ou digite)"
           />
-          <small className="dica">Preenche com o coordenador ao escolher — dá para trocar.</small>
+          <datalist id="lista-pessoas">
+            {pessoas.map((p) => (
+              <option key={p.chave} value={p.nome} />
+            ))}
+          </datalist>
+          <small className="dica">Escolha da lista (coordenadores e cabos) — traz o telefone. Preenche com o coordenador ao selecioná-lo.</small>
+        </label>
+
+        <label className="campo campo-estreito">
+          <span>Tel. do responsável</span>
+          <input
+            value={form.responsavel_telefone ?? ''}
+            onChange={(e) => setCampo('responsavel_telefone', e.target.value)}
+            placeholder="(67) 9…"
+            inputMode="tel"
+          />
         </label>
       </div>
 

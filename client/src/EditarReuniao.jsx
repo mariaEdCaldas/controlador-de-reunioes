@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { editarReuniao, listarRegioes, criarRegiao, listarCoordenadores } from './api.js';
-import { formatarData, brParaIso } from './regioes.js';
+import { editarReuniao, listarRegioes, criarRegiao, listarCoordenadores, listarCabos } from './api.js';
+import { formatarData, brParaIso, formatarTelefone } from './regioes.js';
 import ReuniaoCampos from './ReuniaoCampos.jsx';
 
 /**
@@ -20,10 +20,13 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
     hora: reuniao.hora ?? '',
     coordenador: reuniao.coordenador_nome ?? '',
     responsavel: reuniao.responsavel ?? '',
+    responsavel_telefone: reuniao.responsavel_telefone
+      ? formatarTelefone(reuniao.responsavel_telefone) : '',
     palestrante: reuniao.palestrante ?? '',
     qtd_cadeiras: reuniao.qtd_cadeiras ?? '',
     tem_som: Boolean(reuniao.tem_som),
   });
+  const [pessoas, setPessoas] = useState([]); // coordenadores + cabos (p/ Responsável)
   const [coordSelecionado, setCoordSelecionado] = useState(null);
   const [erros, setErros] = useState({});
   const [erroGeral, setErroGeral] = useState('');
@@ -31,11 +34,26 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
 
   useEffect(() => {
     listarRegioes().then(setRegioes).catch((e) => setErroGeral(e.message));
-    listarCoordenadores().then((cs) => {
+    Promise.all([listarCoordenadores(), listarCabos()]).then(([cs, cbs]) => {
       setCoordenadores(cs);
       setCoordSelecionado(cs.find((c) => c.id === reuniao.coordenador_id) ?? null);
+      setPessoas([
+        ...cs.map((c) => ({ nome: c.nome, telefone: c.telefone, chave: `c${c.id}` })),
+        ...cbs.map((c) => ({ nome: c.nome, telefone: c.telefone, chave: `b${c.id}` })),
+      ]);
     }).catch(() => {});
   }, [reuniao.coordenador_id]);
+
+  // Ao escolher o Responsável na lista (coordenador ou cabo), traz o telefone.
+  function mudarResponsavel(e) {
+    const valor = e.target.value;
+    const p = pessoas.find((x) => x.nome.toLowerCase() === valor.trim().toLowerCase());
+    setForm((f) => ({
+      ...f,
+      responsavel: valor,
+      ...(p?.telefone ? { responsavel_telefone: formatarTelefone(p.telefone) } : {}),
+    }));
+  }
 
   const setCampo = (campo, valor) => {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -53,6 +71,7 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
       ...f,
       coordenador: valor,
       responsavel: valor,
+      ...(match?.telefone ? { responsavel_telefone: formatarTelefone(match.telefone) } : {}),
       ...(match?.candidato ? { candidato: match.candidato } : {}),
     }));
     setCoordSelecionado(match ?? null);
@@ -96,6 +115,7 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
         qtd_cadeiras: form.qtd_cadeiras === '' ? null : Number(form.qtd_cadeiras),
         tem_som: form.tem_som,
         responsavel: form.responsavel,
+        responsavel_telefone: form.responsavel_telefone,
         palestrante: form.palestrante,
       });
       aoSalvar(atualizada);
@@ -122,6 +142,8 @@ export default function EditarReuniao({ reuniao, aoSalvar, aoFechar }) {
             coordSelecionado={coordSelecionado}
             setCampo={setCampo}
             mudarCoordenador={mudarCoordenador}
+            pessoas={pessoas}
+            mudarResponsavel={mudarResponsavel}
           />
           <div className="acoes-form">
             <button type="submit" className="botao primario" disabled={salvando}>

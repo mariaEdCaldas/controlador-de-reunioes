@@ -223,6 +223,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
         qtd_cadeiras: p.publico != null ? p.publico : null,
         tem_som: som,
         responsavel: p.lideranca || p.proponente || '',
+        responsavel_telefone: p.telefone || '',
       });
       await mudarStatusProposta(p.id, 'aprovada');
       setAprovando(null);
@@ -243,6 +244,7 @@ export default function Propostas({ aoCriarReuniao, aoConcluir }) {
       hora: p.hora || '',
       coordenador: p.coordenador_nome || p.proponente || '',
       responsavel: p.lideranca || p.proponente || '',
+      responsavel_telefone: p.telefone ? formatarTelefone(p.telefone) : '',
       qtd_cadeiras: p.publico != null ? String(p.publico) : '',
       tem_som: true,
     });

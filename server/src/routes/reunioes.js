@@ -6,7 +6,7 @@ export const reunioesRouter = Router();
 const SELECT_BASE = `
   SELECT r.id, r.local, r.endereco, r.data, r.hora, r.status,
          r.nome, r.candidato, r.qtd_cadeiras, r.tem_som,
-         r.responsavel, r.palestrante,
+         r.responsavel, r.responsavel_telefone, r.palestrante,
          r.regiao_id, reg.nome AS regiao,
          r.coordenador_id, c.nome AS coordenador_nome, c.telefone AS coordenador_telefone,
          r.titular_id, t.nome AS titular_nome, t.telefone AS titular_telefone,
@@ -71,6 +71,7 @@ async function validarNova(corpo) {
       nome, local, endereco, regiao_id: regiaoId, data, hora,
       candidato, coordenador_id: coordenadorId, qtd_cadeiras: qtdCadeiras, tem_som: temSom,
       responsavel: String(corpo.responsavel ?? '').trim() || null,
+      responsavel_telefone: String(corpo.responsavel_telefone ?? '').trim() || null,
       palestrante: String(corpo.palestrante ?? '').trim() || null,
     },
   };
@@ -84,9 +85,11 @@ reunioesRouter.post('/', async (req, res) => {
   const { lastInsertRowid } = await db
     .prepare(
       `INSERT INTO reunioes (nome, local, endereco, regiao_id, data, hora, status,
-                             candidato, coordenador_id, qtd_cadeiras, tem_som, responsavel, palestrante)
+                             candidato, coordenador_id, qtd_cadeiras, tem_som,
+                             responsavel, responsavel_telefone, palestrante)
        VALUES (@nome, @local, @endereco, @regiao_id, @data, @hora, 'a_confirmar',
-               @candidato, @coordenador_id, @qtd_cadeiras, @tem_som, @responsavel, @palestrante)`
+               @candidato, @coordenador_id, @qtd_cadeiras, @tem_som,
+               @responsavel, @responsavel_telefone, @palestrante)`
     )
     .run(v.dados);
 
@@ -110,7 +113,8 @@ reunioesRouter.patch('/:id', async (req, res) => {
         SET nome = @nome, endereco = @endereco, regiao_id = @regiao_id,
             data = @data, hora = @hora, candidato = @candidato,
             coordenador_id = @coordenador_id, qtd_cadeiras = @qtd_cadeiras, tem_som = @tem_som,
-            responsavel = @responsavel, palestrante = @palestrante
+            responsavel = @responsavel, responsavel_telefone = @responsavel_telefone,
+            palestrante = @palestrante
       WHERE id = @id`
   ).run({ ...campos, id: reuniao.id });
 

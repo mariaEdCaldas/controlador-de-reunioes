@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react';
-import { criarReuniao, listarRegioes, criarRegiao, listarCoordenadores } from './api.js';
-import { brParaIso } from './regioes.js';
+import { criarReuniao, listarRegioes, criarRegiao, listarCoordenadores, listarCabos } from './api.js';
+import { brParaIso, formatarTelefone } from './regioes.js';
 import ReuniaoCampos from './ReuniaoCampos.jsx';
 
 const VAZIO = {
   nome: '', candidato: '', regiao: '', endereco: '',
-  data: '', hora: '', coordenador: '', responsavel: '', palestrante: '',
-  qtd_cadeiras: '', tem_som: true,
+  data: '', hora: '', coordenador: '', responsavel: '', responsavel_telefone: '',
+  palestrante: '', qtd_cadeiras: '', tem_som: true,
 };
+
+/** Junta coordenadores e cabos numa só lista de pessoas (para o Responsável). */
+function montarPessoas(coordenadores, cabos) {
+  return [
+    ...coordenadores.map((c) => ({ nome: c.nome, telefone: c.telefone, chave: `c${c.id}` })),
+    ...cabos.map((c) => ({ nome: c.nome, telefone: c.telefone, chave: `b${c.id}` })),
+  ];
+}
 
 /**
  * Cadastra a reunião da agenda. Depois de salvar, oferece a folha de impressão
@@ -16,6 +24,7 @@ const VAZIO = {
 export default function NovaReuniao({ aoConcluir, inicial }) {
   const [regioes, setRegioes] = useState([]);
   const [coordenadores, setCoordenadores] = useState([]);
+  const [pessoas, setPessoas] = useState([]); // coordenadores + cabos (p/ Responsável)
   // `inicial` vem de uma proposta (aba Propostas) para pré-preencher o cadastro.
   const [form, setForm] = useState({ ...VAZIO, ...(inicial || {}) });
   const [coordSelecionado, setCoordSelecionado] = useState(null);
@@ -25,8 +34,21 @@ export default function NovaReuniao({ aoConcluir, inicial }) {
 
   useEffect(() => {
     listarRegioes().then(setRegioes).catch((e) => setErroGeral(e.message));
-    listarCoordenadores().then(setCoordenadores).catch(() => {});
+    Promise.all([listarCoordenadores(), listarCabos()])
+      .then(([cs, cbs]) => { setCoordenadores(cs); setPessoas(montarPessoas(cs, cbs)); })
+      .catch(() => {});
   }, []);
+
+  // Ao escolher o Responsável na lista (coordenador ou cabo), traz o telefone.
+  function mudarResponsavel(e) {
+    const valor = e.target.value;
+    const p = pessoas.find((x) => x.nome.toLowerCase() === valor.trim().toLowerCase());
+    setForm((f) => ({
+      ...f,
+      responsavel: valor,
+      ...(p?.telefone ? { responsavel_telefone: formatarTelefone(p.telefone) } : {}),
+    }));
+  }
 
   const setCampo = (campo, valor) => {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -47,6 +69,7 @@ export default function NovaReuniao({ aoConcluir, inicial }) {
       ...f,
       coordenador: valor,
       responsavel: valor,
+      ...(match?.telefone ? { responsavel_telefone: formatarTelefone(match.telefone) } : {}),
       ...(match?.candidato ? { candidato: match.candidato } : {}),
     }));
     setCoordSelecionado(match ?? null);
@@ -90,6 +113,7 @@ export default function NovaReuniao({ aoConcluir, inicial }) {
         qtd_cadeiras: form.qtd_cadeiras === '' ? null : Number(form.qtd_cadeiras),
         tem_som: form.tem_som,
         responsavel: form.responsavel,
+        responsavel_telefone: form.responsavel_telefone,
         palestrante: form.palestrante,
       });
       // Salvou: volta direto para a agenda (a reunião já aparece lá). A alocação
@@ -121,6 +145,8 @@ export default function NovaReuniao({ aoConcluir, inicial }) {
           coordSelecionado={coordSelecionado}
           setCampo={setCampo}
           mudarCoordenador={mudarCoordenador}
+          pessoas={pessoas}
+          mudarResponsavel={mudarResponsavel}
         />
 
         <div className="acoes-form">

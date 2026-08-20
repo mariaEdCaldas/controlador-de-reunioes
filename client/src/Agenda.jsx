@@ -343,7 +343,12 @@ function ItemReuniao({ reuniao: r, aberto, aoAbrir, aoAlternarItem, aoImprimir, 
         {r.responsavel && (
           <div className="det">
             <span className="det-rot">Responsável</span>
-            <span>{r.responsavel}</span>
+            <span>
+              {r.responsavel}
+              {r.responsavel_telefone && (
+                <span className="coord-tel"> · {formatarTelefone(r.responsavel_telefone)}</span>
+              )}
+            </span>
           </div>
         )}
         {(r.palestrante || r.titular_nome || r.reserva_nome) && (

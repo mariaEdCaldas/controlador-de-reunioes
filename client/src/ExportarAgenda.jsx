@@ -52,15 +52,16 @@ function partesReuniao(r, comEstrutura) {
     (reg ? ` (${reg})` : '');
 
   const linhas = [];
-  const tel = r.coordenador_telefone ? ` - ${formatarTelefone(r.coordenador_telefone)}` : '';
+  const coordTel = r.coordenador_telefone ? ` - ${formatarTelefone(r.coordenador_telefone)}` : '';
+  const respTel = r.responsavel_telefone ? ` - ${formatarTelefone(r.responsavel_telefone)}` : '';
   const coord = r.coordenador_nome || '';
   const resp = r.responsavel || '';
   if (coord && resp && resp.toLowerCase() !== coord.toLowerCase()) {
-    // Coordenação e Responsável diferentes: duas linhas (o telefone vai no responsável).
-    linhas.push(['Coordenação: ', coord]);
-    linhas.push(['Responsável: ', `${resp}${tel}`]);
+    // Coordenação e Responsável diferentes: duas linhas, cada um com seu telefone.
+    linhas.push(['Coordenação: ', `${coord}${coordTel}`]);
+    linhas.push(['Responsável: ', `${resp}${respTel || coordTel}`]);
   } else if (coord || resp) {
-    linhas.push(['Coordenação/Responsável: ', `${coord || resp}${tel}`]);
+    linhas.push(['Coordenação/Responsável: ', `${coord || resp}${coordTel || respTel}`]);
   }
   if (comEstrutura && (r.qtd_cadeiras != null || r.tem_som)) {
     const partes = [];
