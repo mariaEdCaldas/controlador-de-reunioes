@@ -109,7 +109,8 @@
 .agx-corpo { padding: 18px 22px 26px; }
 .agx-vazio { color: var(--cinza); }
 
-.agx-dia { margin-bottom: 22px; }
+/* Cada dia inteiro se mantém junto: se não couber, vai todo para a próxima página. */
+.agx-dia { margin-bottom: 22px; break-inside: avoid; page-break-inside: avoid; }
 .agx-dia-titulo {
   font-size: 15px;
   font-weight: 700;
@@ -119,8 +120,10 @@
   padding: 8px 12px;
   margin: 0 0 12px;
 }
-.agx-reuniao { border: 1px solid #cfcfcf; padding: 12px 14px; margin-bottom: 12px; }
-.agx-titulo { font-size: 14px; font-weight: 800; color: #111; background: #fff3b0; padding: 2px 4px; margin-bottom: 4px; }
+.agx-reuniao { border: 1px solid #cfcfcf; padding: 12px 14px; margin-bottom: 12px; break-inside: avoid; page-break-inside: avoid; }
+.agx-titulo { font-size: 14px; font-weight: 800; color: #111; padding: 2px 4px; margin-bottom: 4px; }
+/* Grifo (amarelo) só quando o palestrante é o próprio Dep. Paulo Corrêa. */
+.agx-titulo.destaque { background: #fff3b0; }
 .agx-linha { font-size: 13.5px; color: #111; line-height: 1.5; }
 .agx-linha b { font-weight: 700; }
 .agx-linha.estrutura { background: #d7f5c8; display: inline-block; padding: 0 4px; font-weight: 600; }

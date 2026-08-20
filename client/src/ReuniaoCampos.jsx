@@ -131,10 +131,15 @@ export default function ReuniaoCampos({
         <label className="campo">
           <span>Palestrante</span>
           <input
+            list="lista-palestrantes"
             value={form.palestrante ?? ''}
             onChange={(e) => setCampo('palestrante', e.target.value)}
-            placeholder="Quem vai palestrar (ou o próprio deputado)"
+            placeholder="Quem vai palestrar (deixe vazio se não definido)"
           />
+          <datalist id="lista-palestrantes">
+            <option value="Paulo Corrêa" />
+          </datalist>
+          <small className="dica">Se for o Paulo Corrêa, o título fica grifado na agenda exportada.</small>
         </label>
       </div>
 

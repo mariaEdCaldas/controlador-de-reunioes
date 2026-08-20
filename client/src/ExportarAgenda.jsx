@@ -71,13 +71,19 @@ function partesReuniao(r, comEstrutura) {
   }
   if (r.endereco) linhas.push(['Local: ', `${r.endereco}, Campo Grande - MS`]);
   linhas.push(['Link: ', mapsLink(r.endereco || ''), 'link']);
-  const palestrante = r.palestrante || r.titular_nome;
-  linhas.push([
-    '',
-    palestrante ? `Presença de palestrante - ${palestrante}` : 'Presença Dep. Paulo Corrêa',
-    'presenca',
-  ]);
-  return { titulo, linhas };
+  // Presença: só sai a linha quando há palestrante definido. Se o palestrante for
+  // o próprio Paulo Corrêa, a linha vira "Presença Dep. Paulo Corrêa" e o título
+  // fica grifado. Qualquer outro palestrante não grifa; sem palestrante, sem linha.
+  const palestrante = r.palestrante || r.titular_nome || '';
+  const ehPaulo = palestrante.toLowerCase().includes('paulo corr');
+  let destaque = false;
+  if (ehPaulo) {
+    linhas.push(['', 'Presença Dep. Paulo Corrêa', 'presenca']);
+    destaque = true;
+  } else if (palestrante) {
+    linhas.push(['', `Presença de palestrante - ${palestrante}`, 'presenca']);
+  }
+  return { titulo, linhas, destaque };
 }
 
 /**
@@ -165,10 +171,10 @@ export default function ExportarAgenda({ reunioes, aoFechar }) {
                 <section className="agx-dia" key={g.data}>
                   <h2 className="agx-dia-titulo">{dataExtenso(g.data)}</h2>
                   {g.itens.map((r) => {
-                    const { titulo, linhas } = partesReuniao(r, comEstrutura);
+                    const { titulo, linhas, destaque } = partesReuniao(r, comEstrutura);
                     return (
                       <div className="agx-reuniao" key={r.id}>
-                        <div className="agx-titulo">{titulo}</div>
+                        <div className={`agx-titulo ${destaque ? 'destaque' : ''}`}>{titulo}</div>
                         {linhas.map(([rot, txt, tipo], i) => (
                           <div className={`agx-linha ${tipo || ''}`} key={i}>
                             {rot && <b>{rot}</b>}
