@@ -88,6 +88,52 @@
   .fc-dupla { margin-left: 0; }
 }
 
+/* ---------- exportador de agenda (padrão Agenda Capital) ---------- */
+.agx-controles {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 12px;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 14px 16px;
+}
+.agx-campo { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--tinta-suave); }
+.agx-campo select, .agx-campo input[type="date"] { font: inherit; padding: 7px 9px; }
+.agx-check { flex-direction: row; align-items: center; gap: 7px; }
+.agx-check input { width: 16px; height: 16px; accent-color: var(--verde); }
+.agx-botoes { display: flex; gap: 8px; margin-left: auto; }
+
+.agx-doc { font-family: 'Arial', system-ui, sans-serif; }
+.agx-corpo { padding: 18px 22px 26px; }
+.agx-vazio { color: var(--cinza); }
+
+.agx-dia { margin-bottom: 22px; }
+.agx-dia-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  background: #e9e9e9;
+  border: 1px solid #cfcfcf;
+  padding: 8px 12px;
+  margin: 0 0 12px;
+}
+.agx-reuniao { border: 1px solid #cfcfcf; padding: 12px 14px; margin-bottom: 12px; }
+.agx-titulo { font-size: 14px; font-weight: 800; color: #111; background: #fff3b0; padding: 2px 4px; margin-bottom: 4px; }
+.agx-linha { font-size: 13.5px; color: #111; line-height: 1.5; }
+.agx-linha b { font-weight: 700; }
+.agx-linha.estrutura { background: #d7f5c8; display: inline-block; padding: 0 4px; font-weight: 600; }
+.agx-linha.link a { color: #1155cc; word-break: break-all; }
+.agx-linha.presenca { color: #6b7280; }
+
+@media print {
+  .agx-doc { border: none; }
+  .agx-titulo, .agx-linha.estrutura, .agx-dia-titulo, .folha-cabecalho, .fc-dupla span {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+}
+
 /* ---------- modal de edição (reunião / coordenador) ---------- */
 .editar-caixa {
   width: 100%;

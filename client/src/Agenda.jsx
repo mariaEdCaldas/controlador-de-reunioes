@@ -9,6 +9,7 @@ import Busca, { contemBusca } from './Busca.jsx';
 import { agruparPorRegiao, contagemPorRegiao } from './regioesCampoGrande.js';
 import { compartilharFolhaWhatsapp } from './compartilharFolha.jsx';
 import CalendarioRegioes from './CalendarioRegioes.jsx';
+import ExportarAgenda from './ExportarAgenda.jsx';
 
 /** Ícone do WhatsApp por imagem (/icones/whatsapp.png); cai no emoji se faltar. */
 function IconeWhatsapp() {
@@ -71,6 +72,7 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
   const [finalizar, setFinalizar] = useState(null); // reunião sendo finalizada
   const [compartilhandoId, setCompartilhandoId] = useState(null); // gerando imagem
   const [busca, setBusca] = useState('');
+  const [exportando, setExportando] = useState(false); // modal de exportar agenda
 
   // Gera a folha da reunião como imagem e abre o compartilhamento (WhatsApp).
   async function compartilhar(reuniao) {
@@ -197,9 +199,14 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
               : `${reunioes.length} reuni${reunioes.length === 1 ? 'ão' : 'ões'} — próximas primeiro`}
           </p>
         </div>
-        <button className="botao primario" onClick={() => aoNovaReuniao()}>
-          + Nova reunião
-        </button>
+        <div className="cabecalho-acoes">
+          <button className="botao" onClick={() => setExportando(true)}>
+            📄 Exportar agenda
+          </button>
+          <button className="botao primario" onClick={() => aoNovaReuniao()}>
+            + Nova reunião
+          </button>
+        </div>
       </header>
 
       <Busca valor={busca} aoMudar={setBusca} placeholder="Pesquisar por nome, endereço, candidato…" />
@@ -249,6 +256,10 @@ export default function Agenda({ aoNovaReuniao, porRegiao = false }) {
             <ul className="lista lista-cartoes">{visiveis.map(renderItem)}</ul>
           )}
         </>
+      )}
+
+      {exportando && (
+        <ExportarAgenda reunioes={reunioes} aoFechar={() => setExportando(false)} />
       )}
 
       {imprimir && (
